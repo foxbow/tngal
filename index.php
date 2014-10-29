@@ -1,40 +1,30 @@
 <?php
-global $tng_date, $tng_pichome, $tng_browse;
-global $tng_thumbgen,$tng_home, $tng_cols, $tng_zip_dl, $tng_zip_up, $tng_dirpic;
-global $tng_zippic, $tng_picpic, $tng_movpic, $tng_zip_del, $tng_filename;
-global $tng_extension, $tng_time, $tng_thumbw, $tng_thumbh;
-global $tng_tnghome;
-// Test editing mode...
-global $edit, $edpass;
+error_reporting (E_ALL);
 
 // Default settings
+$tng_sidebar=true;
+// Allow upload?
+$tng_upload=true;
 // Generate thumbnails?
 $tng_thumbgen=true;
 $tng_thumbw=120;
 $tng_thumbh=120;
 // Offer to download zip files?
-$tng_zip_dl=true;
+$tng_zip_dl=false;
 // Delete .zip files after unpacking/downloading?
 $tng_zip_del=false;
 // Offer to unpack zip files?
 $tng_zip_up=true;
+// Default sort
+$tng_sort=0;
 // Show dates?
 $tng_date=false;
 // Show filenames?
 $tng_filename=false;
 // Show extensions?
 $tng_extension=false;
-// Enable browsing?
-$tng_browse=true;
-// Open new window for pics?
-$tng_newwin=true;
-// Home for browsing
-$tng_path="/tngal";
-$tng_home="$tng_path/index.html";
-$tng_pichome="";
-$tng_tnghome="$tng_path/tngal.php";
 // Time between two pics
-$tng_time=10;
+$tng_time=8;
 // How many columns in preview
 $tng_cols=5;
 // default mailer
@@ -47,10 +37,11 @@ $tng_swift_host="freemail.org";
 $tng_swift_user=$tng_from;
 $tng_swift_pass="Sup3rS3cr3t";
 
-$tng_picpic="$tng_path/tng_icons/pic.png";
-$tng_movpic="$tng_path/tng_icons/mov.png";
-$tng_dirpic="$tng_path/tng_icons/dir.png";
-$tng_zippic="$tng_path/tng_icons/zip.png";
+$tng_picbase="/tngal/tngal_icons";
+$tng_picpic="$tng_picbase/pic.png";
+$tng_movpic="$tng_picbase/mov.png";
+$tng_dirpic="$tng_picbase/dir.png";
+$tng_zippic="$tng_picbase/zip.png";
 
 $edpass="admin";
 $edit=false;
@@ -59,11 +50,15 @@ $edit=false;
 if(file_exists("tngal_settings.php"))
    require_once("tngal_settings.php");
 
-if( isset($_POST['tng_sort']) ) $tng_sort=$_POST["tng_sort"];
-else if( isset($_COOKIE["tng_sort"]) ) $tng_sort=$_COOKIE["tng_sort"];
-else $tng_sort=0;
+// Sorting may be controlled through a cookie
+if( isset($_POST['tng_sort']) ) {
+	$tng_sort=$_POST["tng_sort"];
+	setcookie( "tng_sort", $_POST['tng_sort'] );
+} else if( isset($_COOKIE["tng_sort"]) ) {
+	$tng_sort=$_COOKIE["tng_sort"];
+}
 
-error_reporting (E_ALL);
+
 
 // Get the path to the dir we want to display
 if(isset($_GET["tng_path"])) $tng_path=$_GET["tng_path"];
@@ -74,11 +69,6 @@ if(isset($_GET["tng_pass"]) && ($_GET["tng_pass"] == $edpass) ) $edit=true;
 if(isset($_POST["tng_path"])) $tng_path=$_POST["tng_path"];
 if(isset($_POST["tng_cmd"])) $tng_cmd=$_POST["tng_cmd"];
 if( isset($_POST["tng_pass"]) && ($_POST["tng_pass"] == $edpass) ) $edit=true;
-
-// $tng_pichome is the page where the pictures wil be displayed in
-// probably it's not the same as the gallery, maybe it is... who
-// knows?
-if($tng_pichome=="") $tng_pichome=$tng_home;
 
 // Make sure there is a path
 if(!isset($tng_path) || ($tng_path=="")) $tng_path="./";
@@ -93,6 +83,12 @@ if(!isset($tng_cmd)) $tng_cmd="browse";
 // Evaluate the command
 switch( $tng_cmd ){
 case "upload":
+	if( !$tng_upload ){
+		printhead();
+		echo "<h1>Upload not permitted!</h1>\n";
+		printfoot();
+		exit();
+	}
   if(isset($_FILES['userfile']['name']) && ($_FILES['userfile']['name'] != "")){
 	$upfile=$_FILES['userfile']['name'];
     $uploaddir = './';
@@ -108,7 +104,7 @@ case "upload":
 		    $message->setFrom(array($tng_from => 'Uploader'));
 		    $message->setTo( $tng_to );
 		    $message->setBody( $body );
-			$transport = Swift_SmtpTransport::newInstance( $tng_swift_host, 25);
+			$transport = Swift_SmtpTransport::newInstance( $tng_swift_host, 587, 'tls');
 	  	    $transport->setUsername( $tng_swift_user );
 	  	    $transport->setPassword( $tng_swift_pass );
 		    $mailer = Swift_Mailer::newInstance($transport);
@@ -370,22 +366,22 @@ function fetchPics( $dir, $sortmethod, $pics=true ){
 }
 
 function browseDir( $dir, $sortmethod ){
-	global $tng_newwin, $tng_date, $tng_pichome, $tng_browse, $tng_filename;
-	global $tng_extension, $tng_thumbgen, $tng_home, $tng_cols, $tng_zip_up;
+	global $tng_date, $tng_filename;
+	global $tng_extension, $tng_thumbgen, $tng_cols, $tng_zip_up;
 	global $tng_zip_dl, $tng_dirpic, $tng_zippic, $tng_picpic, $tng_movpic;
 	global $edit, $edpass, $tng_tnghome;
 
 	printhead( $dir, $sortmethod );	
-   	echo "<table>\n";
+   	echo "<table style='margin:0px auto;'>\n";
 	if ($edit){
-		echo "<form action=\"$tng_home\" method=\"post\">\n";
+		echo "<form action=\"\" method=\"post\">\n";
 	}
 	
 	if ( is_dir($dir) ) {
 		$text=initText( $dir );
 		if( $dir != "./" ) {
 			if(file_exists(upDir($dir)."index.html")) $target=upDir($dir)."index.html";
-			else $target="$tng_home?tng_path=".upDir($dir);
+			else $target="?tng_path=".upDir($dir);
 			echo "<tr><th><a href=\"$target\">[up]</a></th><th colspan=\"".($tng_cols-1)."\">".substr($dir,2,strlen($dir)-1)."</th></tr>\n";
 		}
 		$dircont=fetchPics($dir, $sortmethod, false);
@@ -396,8 +392,14 @@ function browseDir( $dir, $sortmethod ){
             if(is_pic($file)){
                $haspic=true;
                if($tng_thumbgen && !file_exists($dir.".small/".$file)){
-                  if(!file_exists($dir.".small/")) mkdir($dir.".small", 0770);
-                  generateTN($dir, $file);
+                  	if(!file_exists($dir.".small/")) {
+						if( @mkdir($dir.".small", 0770) === false ) {
+							echo "<h1>Insufficient rights in $dir!</h1>\n";
+							printfoot();
+							exit();
+						}
+					}					
+					generateTN($dir, $file);
                }
                if($column==0)
                  if ($tng_filename) echo "<tr valign=\"bottom\">\n";
@@ -405,11 +407,7 @@ function browseDir( $dir, $sortmethod ){
                if($tng_extension) $filename=$file;
                else $filename=cutExtension($file);
 
-//               if($tng_browse) $reference="\"$tng_pichome?tng_cmd=showpic&tng_path=$dir$file\"";
-               if($tng_browse) $reference="\"$tng_tnghome?tng_cmd=showpic&tng_path=$dir$file\"";
-               else $reference="\"$dir$file\"";
-
-               if($tng_newwin) $reference=$reference." target=\"_blank\"";
+				$reference="\"$tng_tnghome?tng_cmd=showpic&tng_path=$dir$file\"";
 
                if(!file_exists($dir.".small/".$file)){
                   echo "  <td align=\"center\"><a href=$reference><img src=\"$tng_picpic\" border=\"0\" alt=\"$file\" title=\"$file\"></a>";
@@ -441,8 +439,6 @@ function browseDir( $dir, $sortmethod ){
 
                $reference="\"$dir$file\"";
 
-               if($tng_newwin) $reference=$reference." target=\"_blank\"";
-
                echo "  <td align=\"center\"><a href=$reference><img src=\"$tng_movpic\" border=\"0\" alt=\"$file\" title=\"$file\"></a>";
                if($tng_filename) echo "<br>\n    <a href=$reference>$filename</a>";
                echo "</td>\n";
@@ -469,7 +465,7 @@ function browseDir( $dir, $sortmethod ){
          foreach( $dircont as $file ){
             if($tng_date) $date=date("Y-m-d", filemtime("$dir$file"));
             // $file is a directory and not a thumbnail container
-            if(is_dir($dir.$file)){
+            if( is_dir($dir.$file) && ( $file != 'tngal_icons' ) ){
                if($column==0) echo "<tr valign=\"bottom\">\n";
                echo "  <td align=\"center\">\n";
                $uplevel=$dir.$file."/.small";
@@ -484,10 +480,7 @@ function browseDir( $dir, $sortmethod ){
                      closedir($handle);
                   }
                }
-
-               if(file_exists($dir.$file."/index.html")) $target=$dir.$file."/index.html";
-               else if (file_exists($dir.$file."/index.html")) $target=$dir.$file."/index.html";
-               else $target="$tng_home?tng_path=$dir$file/";
+				$target="?tng_path=$dir$file/";
 
                if($thumbnail != ""){
                   echo "    <a href=\"$target\"><img src=\"$thumbnail\" border=\"0\" alt=\"(thumbnail)\"></a>\n";
@@ -519,7 +512,7 @@ function browseDir( $dir, $sortmethod ){
                   echo "    <a href=\"$dir$file\"><img src=\"$tng_zippic\" border=\"0\" alt=\"ZIP\"></a>\n";
                   echo "    <br><a href=\"$dir$file\">$file</a>\n";
                   if($tng_zip_up)
-                     echo "    <a href=\"$tng_home?tng_path=$dir$file&tng_cmd=openzip\">(unZIP)</a>\n";
+                     echo "    <a href=\"?tng_path=$dir$file&tng_cmd=openzip\">(unZIP)</a>\n";
                   if($tng_date)
                      echo "    <br>($date)\n";
                   echo "  </td>\n";
@@ -549,7 +542,7 @@ function browseDir( $dir, $sortmethod ){
      echo "</td></tr>\n";
      echo "</form>\n";
      echo "<tr><td colspan=\"$tng_cols\">\n";
-     echo "<form action=\"$tng_home\" method=\"post\">\n";
+     echo "<form action=\"\" method=\"post\">\n";
      echo "<input type=\"text\" name=\"tng_eddir\">\n";
      echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"mkdir\">\n";
      echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
@@ -563,7 +556,7 @@ printfoot();
 }
 
 function openZip( $path ){
-  global $tng_home, $tng_zip_del;
+  global $tng_zip_del;
   $dirname = substr( $path, strrpos( $path, "/" )+1, strrpos( $path, "." )-2);
 //  $path=substr( $path, 2 );
   if(!file_exists($dirname)){
@@ -643,7 +636,7 @@ function makeZip( $path ){
  * Slideshow with mobile support
 */
 function showpic( $path, $sortmethod, $slide=0 ){
-	global $tng_pichome, $tng_tnghome, $tng_time;
+	global $tng_tnghome, $tng_time;
 
 // Post header
 	echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//DE\"\n";
@@ -693,24 +686,32 @@ function showpic( $path, $sortmethod, $slide=0 ){
 }
 
 function printhead( $dir="./", $sortmethod=-1 ){
-global $tng_home, $edit;
-	echo "  <table width='100%'>";
-	echo "    <tr>";
-	if( $sortmethod != -1 ){
-		echo "      <td nowrap width='20%' align='left' valign='top' bgcolor='#cccccc'>"; // width='175px'
+global $edit, $tng_sidebar, $tng_upload;
+	echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//DE\"\n";
+	echo "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
+	echo "<html>\n";
+	echo "  <head>\n";
+	echo "    <title>Gallery</title>\n";
+	echo "  </head>\n";
+	echo "  <body>\n";
+
+	if( $tng_sidebar ) {
+		echo "  <div style='float:left; width:20%; background-color:#ccc'>\n";
 		echo "<!-- Start of menu -->";
-		echo "        <p>&nbsp;<a href='$tng_home'>Home</a>&nbsp;</p>";
-		echo "        <p>\n";
-		echo "          <form enctype=\"multipart/form-data\" action=\"$tng_home\" method=\"post\">\n";
-		echo "            <input type=\"hidden\" name=\"tng_cmd\" value=\"upload\" />\n";
-		echo "            <input name=\"userfile\" type=\"file\" /><br>\n";
-		echo "            <input type=\"submit\" value=\"upload file\" />\n";
-		echo "          </form>\n";
-		echo "        </p>\n";
+//		echo "        <p>&nbsp;<a href='?'>Home</a>&nbsp;</p>";
+		if( $tng_upload ) {
+			echo "        <p>\n";
+			echo "          <form enctype=\"multipart/form-data\" action=\"\" method=\"post\">\n";
+			echo "            <input type=\"hidden\" name=\"tng_cmd\" value=\"upload\" />\n";
+			echo "            <input name=\"userfile\" type=\"file\" /><br>\n";
+			echo "            <input type=\"submit\" value=\"upload file\" />\n";
+			echo "          </form>\n";
+			echo "        </p>\n";
+		}
 		echo "		  <p>\n";
 		echo "Sort<br>\n";
 		$methods=array( 'by name asc', 'by name desc', 'newest first', 'oldest first' );
-		echo "<form action='$tng_home' method='post'>\n";
+		echo "<form action='' method='post'>\n";
 		echo "<input type='hidden' name='tng_cmd' value='browse'>\n";
 		echo "<input type='hidden' name='tng_path' value='$dir'>\n";
 		echo "<select name='tng_sort'>\n";
@@ -723,9 +724,9 @@ global $tng_home, $edit;
 		echo "<input type='submit' value='update'>\n";
 		echo "</form>\n";
 		echo "        </p>\n";
-		
+	
 		if( !$edit ) {
-			echo "<p><form action='$tng_home' method='post'>\n";
+			echo "<p><form action='' method='post'>\n";
 			echo "<input type='hidden' name='tng_cmd' value='browse'>\n";
 			echo "<input type='hidden' name='tng_path' value='$dir'>\n";
 			echo "<input type='password' name='tng_pass' size='10'>\n";
@@ -740,17 +741,15 @@ global $tng_home, $edit;
 		echo "<tr><td>slideshow</td><td>&darr;</td><td>bottom edge</td><td>down</td></tr>\n";
 		echo "<tr><td>back</td><td>&uarr;</td><td>top edge</td><td>up</td></tr>\n";
 		echo "</table>\n";
-		// echo "        <p>&nbsp;<a href='/upload/upload.htm'>Upload</a>&nbsp;</p>";
-		echo "<!-- End of menu -->";
-		echo "      </td>";
+		echo "</div>\n";
+		echo "<!-- End of menu -->\n";
 	}
-	echo "      <td align='center' valign='top'>";
+	echo "<!-- Start of picview -->\n";
 }
 
 function printfoot(){
-	echo "      </td>";
-	echo "    </tr>";
-	echo "  </table>";
+	echo "  </body>\n";
+	echo "</html>\n";
 }
 
 ?>
