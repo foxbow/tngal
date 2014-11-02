@@ -15,7 +15,7 @@ var lastpic=		// the highest picture index
 
 function blink( col ) {
 	bg.style.backgroundColor=col;
-	setTimeout(function(){bg.style.backgroundColor='#fff';}, 50);
+	setTimeout(function(){bg.style.backgroundColor='#fff';}, 25);
 }
 
 function toggleSlideshow() {
@@ -56,8 +56,6 @@ function setPicDim(){
 		mypic.height=-1;
 	}
 
-	// Reset background
-	bg.style.backgroundColor='#fff';
 	document.title=piclist[current];
 }
 
@@ -73,9 +71,9 @@ function loadPic( pic ) {
 		for( i=tout; i>0; i--) buff=buff+'*';
 		document.title=buff;
 	} else {
-		document.title="loading"; // piclist[pic];
+		document.title="loading";
+		blink('#666');
 	}
-	blink('#000');
 	mypic.src=piclist[pic];
 }
 
