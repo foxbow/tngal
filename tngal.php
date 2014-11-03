@@ -253,7 +253,34 @@ function loadImage( $path, $suffix ){
     $imtypes=imagetypes();
     $image=false;
     if((($suffix=="jpg") || ($suffix=="jpeg")) && ($imtypes & IMG_JPG)){
+		$changed=true;
 		$image = @ImageCreateFromJpeg( $path );
+
+		// try to fix orientation
+		$exif = exif_read_data($path);
+		//determine what oreientation the image was taken at
+		$orient=$exif['Orientation'];
+
+//		echo "$path - $orient\n";
+		switch($orient) {
+	        case 3: // 180 rotate left
+	            $image = imagerotate($image, 180, -1);
+	        	break;
+			case 5:
+	        case 6: // 90 rotate right
+	            $image = imagerotate($image, -90, -1);
+	        	break;
+			case 7:
+	        case 8: // 90 rotate left
+	            $image = imagerotate($image, 90, -1);
+	        	break;
+			default: // orientation is correct or mirrored
+				$changed=false;
+				break;
+	    }
+		if( $changed ) {
+			saveImage( $image, $path, $suffix );
+		}
     }else if($suffix=="gif" && ($imtypes & IMG_GIF)){
 		$image = @ImageCreateFromGif( $path );
     }else if($suffix=="png" && ($imtypes & IMG_PNG)){
@@ -459,8 +486,6 @@ function browseDir( $dir, $sortmethod ){
 
 			// put the actual tile on the page
 			if( $newtile ) {
-				$haspic=false;
-
 				// New row of images?
 				if($column==0) {
 					if ($tng_filename) {
@@ -470,28 +495,29 @@ function browseDir( $dir, $sortmethod ){
 					}
 				}
 
-				// Display extensions?
-				if( $tng_extension ) {
-					$filename=$file;
-				} else {
-					$filename=pathinfo ( $file, PATHINFO_FILENAME );
-				}
-
 				echo "  <td align='center'>\n";
 				echo "    <a href='$reference'><img src='$img_src' border='0' alt='$file' title='$file'></a>\n";
 
 				// Show filenames? @todo this looks more like comments are printed..
-				if($tng_filename){
-					if( array_key_exists( $filename, $text ) ) $filename=$text[$filename];
-					echo "<br>\n";
-				}
+				// Display extensions?
+
 			
-				if($edit){
-					echo "\n    <input type=\"checkbox\" name=\"tng_edfile[]\" value=\"$dir$file\">\n";
+				if($tng_filename){
+					if( $tng_extension ) {
+						$filename=$file;
+					} else {
+						$filename=pathinfo ( $file, PATHINFO_FILENAME );
+						if( array_key_exists( $filename, $text ) ) $filename=$text[$filename];
+					}
+					echo "    <br>$filename\n";
 				}
 
-				if($tng_filename){
-					echo "    <a href=$reference>$filename</a>\n";
+				if( $tng_date != false ) {
+					echo "    <br>".date("$tng_date", filemtime( "$dir$file" ) )."\n";
+				}
+
+				if($edit){
+					echo "\n    <input type=\"checkbox\" name=\"tng_edfile[]\" value=\"$dir$file\">\n";
 				}
 
 				echo "  </td>\n";
@@ -526,10 +552,6 @@ function browseDir( $dir, $sortmethod ){
 		foreach( $dircont as $file ){
 			$newtile=false;
 			$zipact="";
-
-            if($tng_date) {
-				$date=date("Y-m-d", filemtime( "$dir$file" ) );
-			}
 
             // $file is a directory and not a thumbnail container
             if( is_dir( $dir.$file ) && ( $file != 'tngal_icons' ) ){
@@ -581,8 +603,8 @@ function browseDir( $dir, $sortmethod ){
 				echo "    <a href='$target'><img src='$img_src' border='0' alt='$file'></a>\n";
 				echo "    <br><a href='$target'>$file</a>\n";
 				echo $zipact;				
-				if($tng_date) {
-					echo "    <br>($date)\n";
+				if( $tng_date != false ) {
+					echo "    <br>(".date("$tng_date", filemtime( "$dir$file" ) ).")\n";
 				}
 				echo "  </td>\n";
 
