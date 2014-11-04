@@ -15,7 +15,7 @@ var lastpic=		// the highest picture index
 
 function blink( col ) {
 	bg.style.backgroundColor=col;
-	setTimeout(function(){bg.style.backgroundColor='#fff';}, 25);
+	setTimeout(function(){bg.style.backgroundColor='#000';}, 25);
 }
 
 function toggleSlideshow() {
@@ -32,29 +32,35 @@ function toggleSlideshow() {
 
 function setPicDim(){ 
 	// Dimensions of the display area
-	var sheight=window.innerHeight-10; // -25;
-	var swidth=window.innerWidth-6;
+	var sheight=window.innerHeight-4; // Avoid right scrollbar
+	var swidth=window.innerWidth;
+
 	// Size of the picture
 	var pheight=mypic.naturalHeight;
 	var pwidth=mypic.naturalWidth;
+
 	// size difference and aspect ratio
 	var hdiff=( sheight > pheight ) ? 0 : pheight - sheight;
 	var wdiff=(  swidth > pwidth  ) ? 0 : pwidth - swidth;
 	var prat=pwidth/pheight;
 
-	// Fir image in display area
+	// Fit image in display area
 	if( ( hdiff != 0 ) || ( wdiff != 0 ) ) {
 		if( wdiff > ( hdiff * prat ) ) {
 			mypic.width=swidth
-			mypic.height=-1
+			mypic.height=swidth/prat;
 		} else {
+			mypic.width=sheight*prat;
 			mypic.height=sheight
-			mypic.width=-1
 		}
 	} else {
 		mypic.width=-1;
 		mypic.height=-1;
 	}
+
+	// Center image vertically
+	if( hdiff > 1 ) mypic.style.paddingTop=((sheight-mypic.height)/2)+'px'
+	else mypic.style.paddingTop='0px'
 
 	document.title=piclist[current];
 }
@@ -72,7 +78,7 @@ function loadPic( pic ) {
 		document.title=buff;
 	} else {
 		document.title="loading";
-		blink('#666');
+		blink('#888');
 	}
 	mypic.src=piclist[pic];
 }

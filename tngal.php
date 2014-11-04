@@ -259,27 +259,28 @@ function loadImage( $path, $suffix ){
 		// try to fix orientation
 		$exif = exif_read_data($path);
 		//determine what oreientation the image was taken at
-		$orient=$exif['Orientation'];
-
-//		echo "$path - $orient\n";
-		switch($orient) {
-	        case 3: // 180 rotate left
-	            $image = imagerotate($image, 180, -1);
-	        	break;
-			case 5:
-	        case 6: // 90 rotate right
-	            $image = imagerotate($image, -90, -1);
-	        	break;
-			case 7:
-	        case 8: // 90 rotate left
-	            $image = imagerotate($image, 90, -1);
-	        	break;
-			default: // orientation is correct or mirrored
-				$changed=false;
-				break;
-	    }
-		if( $changed ) {
-			saveImage( $image, $path, $suffix );
+		if( isset( $exif['Orientation'] ) ) {
+			$orient=$exif['Orientation'];
+//			echo "$path - $orient\n";
+			switch($orient) {
+			    case 3: // 180 rotate left
+			        $image = imagerotate($image, 180, -1);
+			    	break;
+				case 5:
+			    case 6: // 90 rotate right
+			        $image = imagerotate($image, -90, -1);
+			    	break;
+				case 7:
+			    case 8: // 90 rotate left
+			        $image = imagerotate($image, 90, -1);
+			    	break;
+				default: // orientation is correct or mirrored
+					$changed=false;
+					break;
+			}
+			if( $changed ) {
+				saveImage( $image, $path, $suffix );
+			}
 		}
     }else if($suffix=="gif" && ($imtypes & IMG_GIF)){
 		$image = @ImageCreateFromGif( $path );
@@ -738,8 +739,8 @@ function showpic( $path, $sortmethod, $slide=0 ){
 	echo "    <title>slidefox</title>\n";
 	echo "    <script type='text/javascript' src='tngal.js'></script>\n";
 	echo "  </head>\n";
-	echo "  <body style=\"margin: 0px; width: 100%; height: 100%;\">\n";
-	echo "    <div id='bgd' onselectstart='return false' onmousedown='return false' style='background-color:#fff; text-align:center;'><img width='100' height='100' onload='setPicDim();' src='' id='image' border='0'></div>\n";
+	echo "  <body style=\"background-color:#000; margin: 0px; width: 100%; height: 100%;\">\n";
+	echo "    <div id='bgd' onselectstart='return false' onmousedown='return false' style='background-color:#000; text-align:center; margin: 0px;'><img width='100' height='100' onload='setPicDim();' src='' id='image' border='0'></div>\n";
 
 // split between file (if any) and directory
 	$dir = substr( $path, 0, strrpos( $path, "/" )+1 );
