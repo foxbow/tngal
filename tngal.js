@@ -59,7 +59,7 @@ function setPicDim(){
 	}
 
 	// Center image vertically
-	if( hdiff > 1 ) mypic.style.paddingTop=((sheight-mypic.height)/2)+'px'
+	if( ( sheight-mypic.height ) > 1 ) mypic.style.paddingTop=((sheight-mypic.height)/2)+'px'
 	else mypic.style.paddingTop='0px'
 
 	document.title=piclist[current];
