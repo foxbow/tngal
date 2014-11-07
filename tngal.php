@@ -42,6 +42,7 @@ $tng_picpic="$tng_picbase/pic.png";
 $tng_movpic="$tng_picbase/mov.png";
 $tng_dirpic="$tng_picbase/dir.png";
 $tng_zippic="$tng_picbase/zip.png";
+$tng_bsypic="$tng_picbase/bsy.gif";
 
 $edpass="admin";
 $edit=false;
@@ -89,6 +90,15 @@ if(!isset($tng_cmd)) $tng_cmd="browse";
 
 // Evaluate the command
 switch( $tng_cmd ){
+case "genThumb": // @todo: error handling...
+	if( isset( $_GET["dir"] ) && isset( $_GET["file"] )) {
+		generateTN($_GET["dir"], $_GET["file"] );
+		echo $_GET["dir"].".small/".$_GET["file"]."\n";
+	} else {
+		echo "$tng_img\n";
+	}
+	exit();
+	break;
 case "upload":
 	if( !$tng_upload ){
 		printhead();
@@ -431,10 +441,25 @@ function fetchFiles( $dir, $sortmethod  ){
 function browseDir( $dir, $sortmethod ){
 	global $tng_date, $tng_filename;
 	global $tng_extension, $tng_thumbgen, $tng_cols, $tng_zip_up;
-	global $tng_zip_dl, $tng_dirpic, $tng_zippic, $tng_picpic, $tng_movpic;
+	global $tng_zip_dl, $tng_dirpic, $tng_zippic, $tng_picpic, $tng_movpic, $tng_bsypic;
 	global $edit, $edpass;
 
 	printhead( $dir, $sortmethod );	
+echo "<script>
+function genThumb( dir, file ) {
+	var xmlhttp;
+	xmlhttp=new XMLHttpRequest();
+
+	xmlhttp.onreadystatechange=function() {
+  		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+			document.getElementById(file).src=xmlhttp.responseText;
+  		}
+	}
+
+	xmlhttp.open('GET', '?tng_cmd=genThumb&file='+file+'&dir='+dir, true);
+	xmlhttp.send();
+}
+</script>";
    	echo "<table style='margin:0px auto;'>\n";
 	if ($edit){
 		echo "<form action=\"\" method=\"post\">\n";
@@ -460,24 +485,27 @@ function browseDir( $dir, $sortmethod ){
 				$newtile=true;
 				$haspic=true;
 				// Create thumbnails?
-				if($tng_thumbgen && !file_exists($dir.".small/".$file)){
-					if(!file_exists($dir.".small/")) {
-						if( @mkdir($dir.".small", 0770) === false ) {
-							echo "<h1>Insufficient rights in $dir!</h1>\n";
-							printfoot();
-							exit();
-						}
-					}					
-					generateTN($dir, $file);
-				}
-				$reference="?tng_cmd=showpic&tng_path=$dir$file";
-
-				// Thumbnail available?
+				$img_src=$tng_picpic;
 				if( !file_exists( $dir.".small/".$file ) ) {
-					$img_src=$tng_picpic;
+					if( $tng_thumbgen ) {
+						if(!file_exists($dir.".small/")) {
+							if( @mkdir($dir.".small", 0770) === false ) {
+								echo "<h1>Insufficient rights in $dir!</h1>\n";
+								printfoot();
+								exit();
+							}
+						}
+						$img_src=$tng_bsypic;
+						echo "<script>genThumb( '".urlencode($dir)."', '".urlencode($file)."' );</script>\n";
+//						generateTN($dir, $file);
+					}
 				} else {
 					$img_src=$dir.".small/$file";
 	           	}
+
+
+				$reference="?tng_cmd=showpic&tng_path=$dir$file";
+
 			// Is the file a movie?
 			} else if( is_mov($file) ) {
 				$newtile=true;
@@ -497,7 +525,12 @@ function browseDir( $dir, $sortmethod ){
 				}
 
 				echo "  <td align='center'>\n";
-				echo "    <a href='$reference'><img src='$img_src' border='0' alt='$file' title='$file'></a>\n";
+				echo "    <a href='$reference'>";
+				if( $img_src == $tng_bsypic ) {
+					echo "<img id='".urlencode($file)."' src='$img_src' border='0' alt='$file' title='$file'></a>\n";
+				} else {
+					echo "<img src='$img_src' border='0' alt='$file' title='$file'></a>\n";
+				}
 
 				// Show filenames? @todo this looks more like comments are printed..
 				// Display extensions?
