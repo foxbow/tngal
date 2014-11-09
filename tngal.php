@@ -10,19 +10,19 @@ $tng_thumbgen=true;
 $tng_thumbw=120;
 $tng_thumbh=120;
 // Offer to download zip files?
-$tng_zip_dl=false;
+$tng_zip_dl=true;
 // Delete .zip files after unpacking/downloading?
 $tng_zip_del=false;
 // Offer to unpack zip files?
 $tng_zip_up=true;
 // Default sort
 $tng_sort=0;
-// Show dates?
-$tng_date=false;
+// Show dates? false==no, "format"==yes
+$tng_date="d.m.Y";
 // Show filenames?
-$tng_filename=false;
+$tng_filename=true;
 // Show extensions?
-$tng_extension=false;
+$tng_extension=true;
 // Time between two pics
 $tng_time=8;
 // How many columns in preview
@@ -227,6 +227,7 @@ function is_arc($file){
 function testSuffix( $file, $suffices ){
 	$suffix=pathinfo ( $file, PATHINFO_EXTENSION );
 	if( !isset( $suffix ) ) return false;
+	$suffix=strtolower($suffix);
 	foreach( $suffices as $test ){
 		if($suffix == $test) return true;
 	}
@@ -239,7 +240,7 @@ function testSuffix( $file, $suffices ){
 function generateTN($dir, $file){
 	if(function_exists("imagetypes")){
 		$path=$dir.$file;
-		$suffix = pathinfo ( $file, PATHINFO_EXTENSION );
+		$suffix = strtolower( pathinfo ( $file, PATHINFO_EXTENSION ) );
 		$image = loadImage( $path, $suffix );
 		if ($image){
 			$im2=newSize( $image );
@@ -264,7 +265,7 @@ function loadImage( $path, $suffix ){
     $image=false;
     if((($suffix=="jpg") || ($suffix=="jpeg")) && ($imtypes & IMG_JPG)){
 		$changed=true;
-		$image = @ImageCreateFromJpeg( $path );
+		$image = ImageCreateFromJpeg( $path );
 
 		// try to fix orientation
 		$exif = exif_read_data($path);
@@ -517,10 +518,11 @@ function genThumb( dir, file ) {
 			if( $newtile ) {
 				// New row of images?
 				if($column==0) {
-					if ($tng_filename) {
-						echo "<tr valign=\"bottom\">\n";
+					// @todo: align on bottom when ethere's text?
+					if ( $tng_filename || $tng_date ) {
+						echo "<tr style='vertical-align:bottom'>\n";
 					} else {
-						echo "<tr>\n";
+						echo "<tr style='vertical-align:center'>\n";
 					}
 				}
 
