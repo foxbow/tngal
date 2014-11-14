@@ -864,6 +864,7 @@ global $edit, $tng_sidebar, $tng_upload, $tng_embed;
 			echo "<input type='submit' value='admin'>\n";
 			echo "</form></p>\n";
 		}
+/*
 		echo "<h3>Imageview:</h3>\n";
 		echo "<table>\n";
 		echo "<tr><th>func</th><th>key</th><th>click</th><th>swipe</th></tr>\n";
@@ -872,6 +873,7 @@ global $edit, $tng_sidebar, $tng_upload, $tng_embed;
 		echo "<tr><td>slideshow</td><td>&darr;</td><td>bottom edge</td><td>down</td></tr>\n";
 		echo "<tr><td>back</td><td>&uarr;</td><td>top edge</td><td>up</td></tr>\n";
 		echo "</table>\n";
+*/
 		echo "</div>\n";
 		echo "<!-- End of menu -->\n";
 	}

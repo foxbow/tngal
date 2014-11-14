@@ -2,7 +2,7 @@ var sx, sy;
 var tcnt=0;
 var last=-1;
 var piclist=new Array();
-
+var lastcur="default";
 /**
  * external variables:
  *
@@ -62,6 +62,7 @@ function setPicDim(){
 	if( ( sheight-mypic.height ) > 1 ) mypic.style.paddingTop=((sheight-mypic.height)/2)+'px'
 	else mypic.style.paddingTop='0px'
 
+	document.body.style.cursor=lastcur;
 	document.title=piclist[current];
 }
 
@@ -77,10 +78,35 @@ function loadPic( pic ) {
 		for( i=tout; i>0; i--) buff=buff+'*';
 		document.title=buff;
 	} else {
+		lastcur=document.body.style.cursor;
+		document.body.style.cursor="wait";
 		document.title="loading";
 		blink('#888');
 	}
 	mypic.src=piclist[pic];
+}
+
+document.onmousemove=function( e ) {
+	var wwidth=window.innerWidth
+	var wheight=window.innerHeight
+
+	if( e.pageY < 100 ) {
+		document.body.style.cursor="n-resize";
+	} else if( e.pageY > ( wheight - 100 ) ) {
+		document.body.style.cursor="col-resize";
+	} else {
+		if( ( current > 0 ) && ( e.pageX < 100 ) ) {
+			document.body.style.cursor="w-resize";
+		} else if( ( current < lastpic ) && ( e.pageX > ( wwidth - 100 ) ) ) {
+			document.body.style.cursor="e-resize";
+		} else {
+			document.body.style.cursor="default";
+		}
+	}
+
+};
+
+function setCursor( x, y ) {
 }
 
 /**
