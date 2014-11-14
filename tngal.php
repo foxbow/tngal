@@ -209,7 +209,7 @@ function is_pic($file){
  * same goes for movies
  **/
 function is_mov($file){
-   $suffices=array("mpg", "avi", "mpeg", "mov", "wmv", "swf");
+   $suffices=array( "aaf", "3gp", "asf", "avi", "fla", "flr", "flv", "m1v", "m2v", "m4v", "mpg", "mpeg", "mov", "rm", "wmv", "swf",  "mp4");
    return testSuffix( $file, $suffices );
 }
 
