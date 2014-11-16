@@ -800,12 +800,20 @@ function showpic( $path, $sortmethod, $slide=0 ){
 	echo "    <div id='bgd' onselectstart='return false' onmousedown='return false' style='background-color:#000; text-align:center; margin: 0px;'><img width='100' height='100' onload='setPicDim();' src='' id='image' border='0'></div>\n";
 
 // split between file (if any) and directory
-	$dir = pathinfo( $path, PATHINFO_DIRNAME )."/";
-	$current = pathinfo( $path, PATHINFO_BASENAME );
+	if( is_dir( $path ) ) {
+		$dir=$path;
+		$current="";
+	} else {
+		$dir = pathinfo( $path, PATHINFO_DIRNAME )."/";
+		$current = pathinfo( $path, PATHINFO_BASENAME );
+	}
 
 // are we holding a proper directory?
 	if (is_dir($dir)) {
 		echo "<script>\n";
+		
+echo "var ddir='$dir';\n";
+echo "var dcur='$current';\n";
 		echo "var tout=$tng_time;\n";
 		echo "var mypic=document.getElementById('image');\n";
 		echo "var bg=document.getElementById('bgd');\n";
