@@ -61,32 +61,33 @@ if( $myname == "tngal.php" ) {
 }
 
 // Sorting may be controlled through a cookie
+// If sorting was changed, try to set the cookie before anything else is sent.
 if( isset($_POST['tng_sort']) ) {
 	$tng_sort=$_POST["tng_sort"];
-	setcookie( "tng_sort", $_POST['tng_sort'] );
+	setcookie("tng_sort", $_POST['tng_sort']);
 } else if( isset($_COOKIE["tng_sort"]) ) {
 	$tng_sort=$_COOKIE["tng_sort"];
 }
 
 // Get the path to the dir we want to display
-if(isset($_GET["tng_path"])) $tng_path=$_GET["tng_path"];
-if(isset($_GET["tng_cmd"])) $tng_cmd=$_GET["tng_cmd"];
-if(isset($_GET["tng_pass"]) && ($_GET["tng_pass"] == $edpass) ) $edit=true;
+if( isset($_GET["tng_path"]) ) $tng_path=$_GET["tng_path"];
+if( isset($_GET["tng_cmd"] ) ) $tng_cmd=$_GET["tng_cmd"];
+if( isset($_GET["tng_pass"]) && ($_GET["tng_pass"] == $edpass) ) $edit=true;
 
 // Forms override parameters!
-if(isset($_POST["tng_path"])) $tng_path=$_POST["tng_path"];
-if(isset($_POST["tng_cmd"])) $tng_cmd=$_POST["tng_cmd"];
-if( isset($_POST["tng_pass"]) && ($_POST["tng_pass"] == $edpass) ) $edit=true;
+if( isset($_POST["tng_path"]) ) $tng_path=$_POST["tng_path"];
+if( isset($_POST["tng_cmd"] ) ) $tng_cmd=$_POST["tng_cmd"];
+if( isset($_POST["tng_pass"]) && ( $_POST["tng_pass"] == $edpass ) ) $edit=true;
 
 // Make sure there is a path
 if(!isset($tng_path) || ($tng_path=="")) $tng_path="./";
 // Do not allow backsteps
-else if(strpos("../", $tng_path) > 0) $tng_path="./";
+else if( strpos("../", $tng_path) > 0 ) $tng_path="./";
 // Do not allow absolute paths
-else if($tng_path{0}=="/") $tng_path="./";
+else if( $tng_path{0}=="/" ) $tng_path="./";
 
 // browse curent dir is the default command
-if(!isset($tng_cmd)) $tng_cmd="browse";
+if( !isset($tng_cmd) ) $tng_cmd="browse";
 
 // Evaluate the command
 switch( $tng_cmd ){
@@ -178,17 +179,32 @@ case "move":
       else if ($count==0) echo "<b>No source file selected!</b><br>\n";
       else{
 	    foreach( $tng_edfile as $pic ){
-          $pos=strrpos( $pic, "/" );
-          $file=substr( $pic, $pos+1 );
-          $path=substr( $pic, 0, $pos+1 );
+          $file=pathinfo( $pic, PATHINFO_FILENAME );
+          $path=pathinfo( $pic, PATHINFO_DIRNAME );
           rename( "$pic", "$tng_eddir/$file" );
           if(file_exists( "$path.small/$file" ))
-            rename( "$path.small/$file", "$tng_eddir/.small/$file" );
+            rename( "$path/.small/$file", "$tng_eddir/.small/$file" );
         }
       }
     }
     browseDir($tng_path, $tng_sort);
     break;
+case "remove":
+	if($edit){
+		$tng_edfile=array();
+		$tng_edfile=$_POST["tng_edfile"];
+		$count=count($tng_edfile);
+		foreach( $tng_edfile as $pic ){
+			$file=pathinfo( $pic, PATHINFO_FILENAME );
+			$path=pathinfo( $pic, PATHINFO_DIRNAME );
+			unlink( "$pic" );
+			if(file_exists( "$path.small/$file" )) {
+				unlink( "$path.small/$file" );
+			}
+		}
+	}
+	browseDir($tng_path, $tng_sort);
+	break;
 case "openzip":
     $dirname=openZip($tng_path);
     $tng_path=upDir($tng_path).$dirname."/";
@@ -661,19 +677,25 @@ function genThumb( dir, file ) {
 	}
 
 	if($edit){
-		 echo "<tr><td colspan=\"$tng_cols\">\n";
-		 echo "<input type=\"submit\" value=\"Move\">\n";
-		 echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"move\">\n";
-		 echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
-		 echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
-		 echo "</td></tr>\n";
-		 echo "</form>\n";
-		 echo "<tr><td colspan=\"$tng_cols\">\n";
-		 echo "<form action=\"\" method=\"post\">\n";
-		 echo "<input type=\"text\" name=\"tng_eddir\">\n";
-		 echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"mkdir\">\n";
-		 echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
-     echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
+		echo "<tr><td>\n";
+		echo "<input type=\"submit\" value=\"Move\">\n";
+		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"move\">\n";
+		echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
+		echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
+		echo "</td>\n";
+		echo "<td>\n";
+		echo "<input type=\"submit\" value=\"Delete\">\n";
+		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"remove\">\n";
+		echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
+		echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
+		echo "</td></tr>\n";
+		echo "</form>\n";
+		echo "<tr><td colspan=\"$tng_cols\">\n";
+		echo "<form action=\"\" method=\"post\">\n";
+		echo "<input type=\"text\" name=\"tng_eddir\">\n";
+		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"mkdir\">\n";
+		echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
+		echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
 		echo "<input type=\"submit\" value=\"Makedir\">\n";
 		echo "</form></td></tr>\n";
 	}
@@ -778,8 +800,8 @@ function showpic( $path, $sortmethod, $slide=0 ){
 	echo "    <div id='bgd' onselectstart='return false' onmousedown='return false' style='background-color:#000; text-align:center; margin: 0px;'><img width='100' height='100' onload='setPicDim();' src='' id='image' border='0'></div>\n";
 
 // split between file (if any) and directory
-	$dir = substr( $path, 0, strrpos( $path, "/" )+1 );
-	$current = substr( $path, strrpos( $path, "/" )+1 );
+	$dir = pathinfo( $path, PATHINFO_DIRNAME )."/";
+	$current = pathinfo( $path, PATHINFO_BASENAME );
 
 // are we holding a proper directory?
 	if (is_dir($dir)) {
@@ -801,6 +823,7 @@ function showpic( $path, $sortmethod, $slide=0 ){
 
 		echo "var current=$curpic\n";
 		echo "var lastpic=".($picnum-1)."\n";
+		echo "initPicViewer();\n";
 		echo "loadPic($curpic);\n";
 		if ( $slide != 0 ){ 
 			echo "last=current\n";
@@ -849,7 +872,7 @@ global $edit, $tng_sidebar, $tng_upload, $tng_embed;
 		for( $i=0; $i<4; $i++ ) {
 			echo "<option ";
 			if( $sortmethod == $i ) echo "selected ";
-			echo "value='$i'>".$methods[$i]."\n";
+			echo "value='$i'>".$methods[$i]."</option>\n";
 		}
 		echo "</select>\n";
 		echo "<input type='submit' value='update'>\n";
@@ -864,16 +887,7 @@ global $edit, $tng_sidebar, $tng_upload, $tng_embed;
 			echo "<input type='submit' value='admin'>\n";
 			echo "</form></p>\n";
 		}
-/*
-		echo "<h3>Imageview:</h3>\n";
-		echo "<table>\n";
-		echo "<tr><th>func</th><th>key</th><th>click</th><th>swipe</th></tr>\n";
-		echo "<tr><td>prev image</td><td>&larr;</td><td>left edge</td><td>right</td></tr>\n";
-		echo "<tr><td>next image</td><td>&rarr;</td><td>right edge</td><td>left</td></tr>\n";
-		echo "<tr><td>slideshow</td><td>&darr;</td><td>bottom edge</td><td>down</td></tr>\n";
-		echo "<tr><td>back</td><td>&uarr;</td><td>top edge</td><td>up</td></tr>\n";
-		echo "</table>\n";
-*/
+
 		echo "</div>\n";
 		echo "<!-- End of menu -->\n";
 	}

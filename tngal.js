@@ -34,7 +34,6 @@ function setPicDim(){
 	// Dimensions of the display area
 	var sheight=window.innerHeight-4; // Avoid right scrollbar
 	var swidth=window.innerWidth;
-
 	// Size of the picture
 	var pheight=mypic.naturalHeight;
 	var pwidth=mypic.naturalWidth;
@@ -59,14 +58,136 @@ function setPicDim(){
 	}
 
 	// Center image vertically
-	if( ( sheight-mypic.height ) > 1 ) mypic.style.paddingTop=((sheight-mypic.height)/2)+'px'
-	else mypic.style.paddingTop='0px'
-
-	document.body.style.cursor=lastcur;
+	if( ( sheight-mypic.height ) > 1 ){ 
+		mypic.style.paddingTop=((sheight-mypic.height)/2)+'px';
+		mypic.style.paddingBottom=mypic.style.paddingTop;
+	} else {
+		mypic.style.paddingTop='0px'
+	}
+	
+	bg.style.cursor=lastcur;
 	document.title=piclist[current];
 }
 
-window.addEventListener('orientationchange', setPicDim );
+/**
+ * initialize all callbacks after the basic page is set up.
+ * especially firefox does not like forward declarations
+ * on callbacks, i.e.: document.body when there is no <BODY>
+ * tag yet.
+ */
+function initPicViewer() {
+	window.addEventListener('orientationchange', setPicDim );
+	
+	document.onmousemove=function( e ) {
+		var wwidth=window.innerWidth
+		var wheight=window.innerHeight
+
+		if( e.pageY < 100 ) {
+			bg.style.cursor="n-resize";
+		} else if( e.pageY > ( wheight - 100 ) ) {
+			bg.style.cursor="col-resize";
+		} else {
+			if( ( current > 0 ) && ( e.pageX < 100 ) ) {
+				bg.style.cursor="w-resize";
+			} else if( ( current < lastpic ) && ( e.pageX > ( wwidth - 100 ) ) ) {
+				bg.style.cursor="e-resize";
+			} else {
+				bg.style.cursor="default";
+			}
+		}
+
+	};
+
+	/**
+	 * touchscreen control
+	 */
+	document.addEventListener('touchmove', function(event) {
+		event.defaultPrevented; // preventDefault();
+	}, false);
+
+	document.addEventListener('touchstart', function(event) {
+		var touch = event.changedTouches[0]
+		sx = touch.pageX
+		sy = touch.pageY
+		event.defaultPrevented; // preventDefault();
+	}, false);
+
+	document.addEventListener('touchend', function(event){
+		var touch = event.changedTouches[0]
+		var dirx = 1
+		var diry = 1
+		var orient, distx, disty
+		distx = touch.pageX - sx
+		disty = touch.pageY - sy
+
+		if ( distx < 0 ) {
+			dirx = -1
+			distx = -distx
+		}
+		if ( disty < 0 ) {
+			diry = -1
+			disty = -disty
+		}
+
+		if ( distx > 200 ) {
+			if( ( current > 0 ) && ( dirx > 0 ) ) current=current-1
+			if( ( current < lastpic ) && ( dirx < 0 ) ) current=current+1
+			loadPic( current );
+		} else 	if ( disty > 200 ) {
+			if( diry < 0 ) history.back();
+			else {
+				toggleSlideshow();
+			}
+		}
+
+		event.defaultPrevented; // preventDefault()
+	}, false)
+
+	/**
+	 * mouse control
+	 */
+	document.onclick = function(e) {
+		var wwidth=window.innerWidth
+		var wheight=window.innerHeight
+		var newpic=current;
+		if( e.pageY < 100 ) 
+			history.back();
+		else if( e.pageY > ( wheight - 100 ) ) {
+			toggleSlideshow();
+		} else {
+			if( ( current > 0 ) && ( e.pageX < 100 ) ) newpic=current-1;
+			if( ( current < lastpic ) && ( e.pageX > ( wwidth - 100 ) ) ) newpic=current+1;
+			if( current != newpic ) {
+				current = newpic;
+				loadPic(current);
+			}
+		}
+	}
+
+	/**
+	 * Keyboard control
+	 */
+	document.onkeydown=function(e) {
+		switch(e.keyCode) {
+		case 37: // left
+			if( current > 0 ) current=current-1;
+			else current=lastpic;
+			loadPic(current);
+		break;
+		case 38: // up
+			history.back();
+		break;
+	 	case 39: // right
+			if( current < lastpic ) current=current+1;
+			else current=0;
+			loadPic(current)
+		break;
+		case 40: // down
+			toggleSlideshow();
+		break;
+		}
+	}
+}
 
 /**
  * load a new picture and update the status line
@@ -78,125 +199,12 @@ function loadPic( pic ) {
 		for( i=tout; i>0; i--) buff=buff+'*';
 		document.title=buff;
 	} else {
-		lastcur=document.body.style.cursor;
-		document.body.style.cursor="wait";
+		lastcur=bg.style.cursor;
+		bg.style.cursor="wait";
 		document.title="loading";
 		blink('#888');
 	}
 	mypic.src=piclist[pic];
-}
-
-document.onmousemove=function( e ) {
-	var wwidth=window.innerWidth
-	var wheight=window.innerHeight
-
-	if( e.pageY < 100 ) {
-		document.body.style.cursor="n-resize";
-	} else if( e.pageY > ( wheight - 100 ) ) {
-		document.body.style.cursor="col-resize";
-	} else {
-		if( ( current > 0 ) && ( e.pageX < 100 ) ) {
-			document.body.style.cursor="w-resize";
-		} else if( ( current < lastpic ) && ( e.pageX > ( wwidth - 100 ) ) ) {
-			document.body.style.cursor="e-resize";
-		} else {
-			document.body.style.cursor="default";
-		}
-	}
-
-};
-
-function setCursor( x, y ) {
-}
-
-/**
- * touchscreen control
- */
-document.addEventListener('touchmove', function(event) {
-	event.defaultPrevented; // preventDefault();
-}, false);
-
-document.addEventListener('touchstart', function(event) {
-	var touch = event.changedTouches[0]
-	sx = touch.pageX
-	sy = touch.pageY
-	event.defaultPrevented; // preventDefault();
-}, false);
-
-document.addEventListener('touchend', function(event){
-	var touch = event.changedTouches[0]
-	var dirx = 1
-	var diry = 1
-	var orient, distx, disty
-	distx = touch.pageX - sx
-	disty = touch.pageY - sy
-
-	if ( distx < 0 ) {
-		dirx = -1
-		distx = -distx
-	}
-	if ( disty < 0 ) {
-		diry = -1
-		disty = -disty
-	}
-
-	if ( distx > 200 ) {
-		if( ( current > 0 ) && ( dirx > 0 ) ) current=current-1
-		if( ( current < lastpic ) && ( dirx < 0 ) ) current=current+1
-		loadPic( current );
-	} else 	if ( disty > 200 ) {
-		if( diry < 0 ) history.back();
-		else {
-			toggleSlideshow();
-		}
-	}
-
-	event.defaultPrevented; // preventDefault()
-}, false)
-
-/**
- * mouse control
- */
-document.onclick = function(e) {
-	var wwidth=window.innerWidth
-	var wheight=window.innerHeight
-	var newpic=current;
-	if( e.pageY < 100 ) 
-		history.back();
-	else if( e.pageY > ( wheight - 100 ) ) {
-		toggleSlideshow();
-	} else {
-		if( ( current > 0 ) && ( e.pageX < 100 ) ) newpic=current-1;
-		if( ( current < lastpic ) && ( e.pageX > ( wwidth - 100 ) ) ) newpic=current+1;
-		if( current != newpic ) {
-			current = newpic;
-			loadPic(current);
-		}
-	}
-}
-
-/**
- * Keyboard control
- */
-document.onkeydown=function(e) {
-	switch(e.keyCode) {
-	case 37: // left
-		if( current > 0 ) current=current-1;
-		else current=lastpic;
-		loadPic(current);
-	break;
-	case 38: // up
-		history.back();
-	break;
- 	case 39: // right
-		if( current < lastpic ) current=current+1;
-		else current=0;
-		loadPic(current)
-	break;
-	case 40: // down
-		toggleSlideshow();
-	break;
-	}
 }
 
 function nextpic() {
