@@ -3,6 +3,8 @@ var tcnt=0;
 var last=-1;
 var piclist=new Array();
 var lastcur="default";
+var current=-1;
+var nptimer=-1;
 /**
  * external variables:
  *
@@ -23,10 +25,11 @@ function toggleSlideshow() {
 	if( last == -1 ) {
 		last=current
 		tcnt=0;
-		setTimeout( "nextpic()", 1000 );
+		if( nptimer == -1 ) heartbeat();
 	} else {
 		last=-1
 		tcnt=tout;
+		document.title=piclist[current];
 	}
 }
 
@@ -63,10 +66,20 @@ function setPicDim(){
 		mypic.style.paddingBottom=mypic.style.paddingTop;
 	} else {
 		mypic.style.paddingTop='0px'
+		mypic.style.paddingBottom='0px'
 	}
 	
 	bg.style.cursor=lastcur;
-	document.title=piclist[current];
+	if( last != -1 ) {  						// Slideshow active?
+		if ( tcnt == tout ) {					// Next picture? 
+			tcnt=0;
+		} else if( current != last ) {			// manual change?
+			last = current;
+			tcnt=0;
+		}
+	} else {
+		document.title=piclist[current];
+	}
 }
 
 /**
@@ -101,18 +114,18 @@ function initPicViewer() {
 	/**
 	 * touchscreen control
 	 */
-	document.addEventListener('touchmove', function(event) {
+	bg.addEventListener('touchmove', function(event) {
 		event.defaultPrevented; // preventDefault();
 	}, false);
 
-	document.addEventListener('touchstart', function(event) {
+	bg.addEventListener('touchstart', function(event) {
 		var touch = event.changedTouches[0]
 		sx = touch.pageX
 		sy = touch.pageY
 		event.defaultPrevented; // preventDefault();
 	}, false);
 
-	document.addEventListener('touchend', function(event){
+	bg.addEventListener('touchend', function(event){
 		var touch = event.changedTouches[0]
 		var dirx = 1
 		var diry = 1
@@ -130,12 +143,12 @@ function initPicViewer() {
 		}
 
 		if ( distx > 200 ) {
-			if( ( current > 0 ) && ( dirx > 0 ) ) current=current-1
-			if( ( current < lastpic ) && ( dirx < 0 ) ) current=current+1
-			loadPic( current );
+			if( dirx > 0 ) nextpic(-1);
+			else nextpic( 1 );
 		} else 	if ( disty > 200 ) {
-			if( diry < 0 ) history.back();
-			else {
+			if( diry < 0 ) {
+				history.back();
+			} else {
 				toggleSlideshow();
 			}
 		}
@@ -149,18 +162,13 @@ function initPicViewer() {
 	document.onclick = function(e) {
 		var wwidth=window.innerWidth
 		var wheight=window.innerHeight
-		var newpic=current;
-		if( e.pageY < 100 ) 
+		if( e.pageY < 100 ) {
 			history.back();
-		else if( e.pageY > ( wheight - 100 ) ) {
+		} else if( e.pageY > ( wheight - 100 ) ) {
 			toggleSlideshow();
 		} else {
-			if( ( current > 0 ) && ( e.pageX < 100 ) ) newpic=current-1;
-			if( ( current < lastpic ) && ( e.pageX > ( wwidth - 100 ) ) ) newpic=current+1;
-			if( current != newpic ) {
-				current = newpic;
-				loadPic(current);
-			}
+			if( e.pageX < 100 ) nextpic(-1);
+			if( e.pageX > ( wwidth - 100 ) ) nextpic(1);
 		}
 	}
 
@@ -170,17 +178,13 @@ function initPicViewer() {
 	document.onkeydown=function(e) {
 		switch(e.keyCode) {
 		case 37: // left
-			if( current > 0 ) current=current-1;
-			else current=lastpic;
-			loadPic(current);
+			nextpic(-1);
 		break;
 		case 38: // up
 			history.back();
 		break;
 	 	case 39: // right
-			if( current < lastpic ) current=current+1;
-			else current=0;
-			loadPic(current)
+			nextpic(1);
 		break;
 		case 40: // down
 			toggleSlideshow();
@@ -193,40 +197,49 @@ function initPicViewer() {
  * load a new picture and update the status line
  */
 function loadPic( pic ) {
-	if( last != -1 ) {
-		tcnt=0;
-		var buff='*';
-		for( i=tout; i>0; i--) buff=buff+'*';
-		document.title=buff;
-	} else {
+	if( pic != current ) {
+		if( last != -1 ) {
+			var buff='*';
+			for( i=tout; i>0; i--) buff=buff+'*';
+			document.title=buff;
+		} else {
+			document.title="loading";
+			blink('#888');
+		}
 		lastcur=bg.style.cursor;
 		bg.style.cursor="wait";
-		document.title="loading";
-		blink('#888');
+		current=pic;
+		mypic.src=piclist[pic];
 	}
-	mypic.src=piclist[pic];
 }
 
-function nextpic() {
-	var buff='*';
-	if( tcnt < tout ) {
-		tcnt=tcnt+1;
-		for( i=tout-tcnt; i>0; i--) buff=buff+'*';
-		document.title=buff;
-		setTimeout( "nextpic()", 1000 );
+function nextpic( dir ) {
+	if( dir < 0 ) {
+		if( current > 0 ) loadPic( current-1 );
+		else loadPic( lastpic );
 	} else {
-		if( last != -1 ) {
-			if( current < lastpic ) { 
-				current=current+1
-				last=current;
-				loadPic( current );
-				setTimeout( "nextpic()", 1000 );
-			} else {
-				history.back();
-			}
+		if( current < lastpic ) loadPic( current+1 );
+		else loadPic( 0 );
+	}
+}
+
+function heartbeat() {
+	var buff='*';
+	if( last != -1 ) {
+		if( tcnt < tout ) {
+			tcnt=tcnt+1;
+			for( i=tout-tcnt; i>0; i--) buff=buff+'*';
+			document.title=buff;
 		} else {
-			document.title=piclist[current];
+			if( current < lastpic ) { 
+				last=current+1;
+				loadPic( last );
+			} else {
+				last=0;
+				loadPic( last );
+			}
 		}
 	}
+	nptimer=setTimeout( "heartbeat()", 1000 );
 }
 

@@ -611,14 +611,9 @@ function genThumb( dir, file ) {
 				$uplevel=$dir.$file."/.small";
 				$img_src=$tng_dirpic;
 				if( file_exists( $uplevel ) && is_dir( $uplevel ) ) {
-					if( $handle = opendir( $uplevel ) ) {
-						while( ( ( $tnfile = readdir( $handle ) ) !== false) && ( $img_src == $tng_dirpic ) ) {
-							if( is_readable( $uplevel."/".$tnfile ) && is_pic( $tnfile ) ) {
-								$img_src=$uplevel."/".$tnfile;
-							}
-						}
-						closedir($handle);
-					}
+					// sort thumbnails by name
+					$thumbs=fetchFiles($uplevel, 0 ); // $sortmethod
+					if( isset( $thumbs[0] ) ) $img_src=$uplevel."/".$thumbs[0];
 				}
 				$target="?tng_path=$dir$file/";
 
@@ -811,9 +806,6 @@ function showpic( $path, $sortmethod, $slide=0 ){
 // are we holding a proper directory?
 	if (is_dir($dir)) {
 		echo "<script>\n";
-		
-echo "var ddir='$dir';\n";
-echo "var dcur='$current';\n";
 		echo "var tout=$tng_time;\n";
 		echo "var mypic=document.getElementById('image');\n";
 		echo "var bg=document.getElementById('bgd');\n";
@@ -829,14 +821,14 @@ echo "var dcur='$current';\n";
 			}
 		}
 
-		echo "var current=$curpic\n";
+//		echo "var current=$curpic\n";
 		echo "var lastpic=".($picnum-1)."\n";
 		echo "initPicViewer();\n";
-		echo "loadPic($curpic);\n";
 		if ( $slide != 0 ){ 
-			echo "last=current\n";
-			echo "setTimeout( \"nextpic()\", 1000 );\n";
+			echo "last=$curpic\n";
 		}
+		echo "loadPic($curpic);\n";
+		echo "heartbeat();\n";
 		echo "</script>\n";
 	}else{
     	echo "    <h1>Could not access $dir!</h1>\n";
