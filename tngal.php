@@ -89,6 +89,8 @@ else if( $tng_path{0}=="/" ) $tng_path="./";
 // browse curent dir is the default command
 if( !isset($tng_cmd) ) $tng_cmd="browse";
 
+if( $tng_cmd == "button" ) $tng_cmd=$_POST['button'];
+
 // Evaluate the command
 switch( $tng_cmd ){
 case "genThumb": // @todo: error handling...
@@ -136,7 +138,7 @@ case "upload":
 						"Reply-To: $tng_from\r\n" .
 						"X-Mailer: PHP/" . phpversion());
 				}
-				echo "<p>$body</p>\n";
+//				echo "<p>$body</p>\n";
 			} else {
 				echo "<p>File upload failed - check the length to be below 2MB!</p>\n";
 			}
@@ -179,27 +181,27 @@ case "move":
       else if ($count==0) echo "<b>No source file selected!</b><br>\n";
       else{
 	    foreach( $tng_edfile as $pic ){
-          $file=pathinfo( $pic, PATHINFO_FILENAME );
+          $file=pathinfo( $pic, PATHINFO_BASENAME );
           $path=pathinfo( $pic, PATHINFO_DIRNAME );
           rename( "$pic", "$tng_eddir/$file" );
-          if(file_exists( "$path.small/$file" ))
+          if(file_exists( "$path/.small/$file" ))
             rename( "$path/.small/$file", "$tng_eddir/.small/$file" );
-        }
+		}
       }
     }
     browseDir($tng_path, $tng_sort);
     break;
-case "remove":
+case "delete":
 	if($edit){
 		$tng_edfile=array();
 		$tng_edfile=$_POST["tng_edfile"];
 		$count=count($tng_edfile);
 		foreach( $tng_edfile as $pic ){
-			$file=pathinfo( $pic, PATHINFO_FILENAME );
+			$file=pathinfo( $pic, PATHINFO_BASENAME );
 			$path=pathinfo( $pic, PATHINFO_DIRNAME );
 			unlink( "$pic" );
-			if(file_exists( "$path.small/$file" )) {
-				unlink( "$path.small/$file" );
+			if(file_exists( "$path/.small/$file" )) {
+				unlink( "$path/.small/$file" );
 			}
 		}
 	}
@@ -486,8 +488,9 @@ function genThumb( dir, file ) {
 		$haspic=false;
 		$text=initText( $dir );
 		if( $dir != "./" ) {
-			if(file_exists(upDir($dir)."index.html")) $target=upDir($dir)."index.html";
-			else $target="?tng_path=".upDir($dir);
+//			if(file_exists(upDir($dir)."index.html")) $target=upDir($dir)."index.html";
+//			else 
+			$target="?tng_path=".upDir($dir);
 			echo "<tr><th><a href=\"$target\">[up]</a></th><th colspan=\"".($tng_cols-1)."\">".substr($dir,2,strlen($dir)-1)."</th></tr>\n";
 		}
 		
@@ -673,16 +676,17 @@ function genThumb( dir, file ) {
 
 	if($edit){
 		echo "<tr><td>\n";
-		echo "<input type=\"submit\" value=\"Move\">\n";
-		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"move\">\n";
+		if( $dir != "./" ) {
+			echo "<input type='radio' name='tng_eddir' value='".updir($dir)."'>&lt;up&gt;\n";
+			echo "</td><td>\n";
+		}
+		echo "<input type=\"submit\" name=\"button\" value=\"move\">\n";
+		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"button\">\n";
 		echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
 		echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
 		echo "</td>\n";
 		echo "<td>\n";
-		echo "<input type=\"submit\" value=\"Delete\">\n";
-		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"remove\">\n";
-		echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
-		echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
+		echo "<input type=\"submit\" name=\"button\" value=\"delete\">\n";
 		echo "</td></tr>\n";
 		echo "</form>\n";
 		echo "<tr><td colspan=\"$tng_cols\">\n";
