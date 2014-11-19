@@ -144,7 +144,7 @@ function initPicViewer() {
 
 		if ( distx > 200 ) {
 			if( dirx > 0 ) nextpic(-1);
-			else nextpic( 1 );
+			else nextpic( +1 );
 		} else 	if ( disty > 200 ) {
 			if( diry < 0 ) {
 				history.back();
@@ -166,9 +166,12 @@ function initPicViewer() {
 			history.back();
 		} else if( e.pageY > ( wheight - 100 ) ) {
 			toggleSlideshow();
+		} else if( e.pageX < 100 ) {
+			nextpic(-1);
+		} else if( e.pageX > ( wwidth - 100 ) ) {
+			nextpic(+1);
 		} else {
-			if( e.pageX < 100 ) nextpic(-1);
-			if( e.pageX > ( wwidth - 100 ) ) nextpic(1);
+			window.open(piclist[current]);
 		}
 	}
 
@@ -177,6 +180,9 @@ function initPicViewer() {
 	 */
 	document.onkeydown=function(e) {
 		switch(e.keyCode) {
+		case 32: // space
+			window.open(piclist[current]);
+		break;
 		case 37: // left
 			nextpic(-1);
 		break;
