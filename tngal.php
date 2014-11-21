@@ -39,7 +39,6 @@ $tng_swift_pass="Sup3rS3cr3t";
 
 $tng_picbase="/tngal/tngal_icons";
 $tng_picpic="$tng_picbase/pic.png";
-$tng_movpic="$tng_picbase/mov.png";
 $tng_dirpic="$tng_picbase/dir.png";
 $tng_zippic="$tng_picbase/zip.png";
 $tng_bsypic="$tng_picbase/bsy.gif";
@@ -95,10 +94,9 @@ if( $tng_cmd == "button" ) $tng_cmd=$_POST['button'];
 switch( $tng_cmd ){
 case "genThumb": // @todo: error handling...
 	if( isset( $_GET["dir"] ) && isset( $_GET["file"] )) {
-		generateTN($_GET["dir"], $_GET["file"] );
-		echo $_GET["dir"].".small/".$_GET["file"]."\n";
+		echo generateTN($_GET["dir"], $_GET["file"] );
 	} else {
-		echo "$tng_img\n";
+		echo "$tng_picpic\n";
 	}
 	exit();
 	break;
@@ -181,11 +179,12 @@ case "move":
       else if ($count==0) echo "<b>No source file selected!</b><br>\n";
       else{
 	    foreach( $tng_edfile as $pic ){
+          $base=pathinfo( $pic, PATHINFO_FILENAME );
           $file=pathinfo( $pic, PATHINFO_BASENAME );
           $path=pathinfo( $pic, PATHINFO_DIRNAME );
           rename( "$pic", "$tng_eddir/$file" );
-          if(file_exists( "$path/.small/$file" ))
-            rename( "$path/.small/$file", "$tng_eddir/.small/$file" );
+          if(file_exists( "$path/.small/$base.jpg" ))
+            rename( "$path/.small/$base.jpg", "$tng_eddir/.small/$base.jpg" );
 		}
       }
     }
@@ -197,11 +196,12 @@ case "delete":
 		$tng_edfile=$_POST["tng_edfile"];
 		$count=count($tng_edfile);
 		foreach( $tng_edfile as $pic ){
+			$base=pathinfo( $pic, PATHINFO_FILENAME );
 			$file=pathinfo( $pic, PATHINFO_BASENAME );
 			$path=pathinfo( $pic, PATHINFO_DIRNAME );
 			unlink( "$pic" );
-			if(file_exists( "$path/.small/$file" )) {
-				unlink( "$path/.small/$file" );
+			if(file_exists( "$path/.small/$base.jpg" )) {
+				unlink( "$path/.small/$base.jpg" );
 			}
 		}
 	}
@@ -227,7 +227,7 @@ function is_pic($file){
  * same goes for movies
  **/
 function is_mov($file){
-   $suffices=array( "aaf", "3gp", "asf", "avi", "fla", "flr", "flv", "m1v", "m2v", "m4v", "mpg", "mpeg", "mov", "rm", "wmv", "swf",  "mp4");
+   $suffices=array( "aaf", "3gp", "asf", "avi", "fla", "flr", "flv", "m1v", "m2v", "m4v", "mpg", "mpeg", "mov", "rm", "webm", "wmv", "swf",  "mp4");
    return testSuffix( $file, $suffices );
 }
 
@@ -255,24 +255,44 @@ function testSuffix( $file, $suffices ){
 /**
  * load an image, resize it and save the thumbnail
  */
-function generateTN($dir, $file){
+function generateTN( $dir, $file ){
+	global $tng_picpic;
+	$retval = $tng_picpic;
+
 	if(function_exists("imagetypes")){
 		$path=$dir.$file;
+		$base   = pathinfo ( $file, PATHINFO_FILENAME );
 		$suffix = strtolower( pathinfo ( $file, PATHINFO_EXTENSION ) );
-		$image = loadImage( $path, $suffix );
-		if ($image){
+		$tnname = "$dir.small/$base.jpg";
+
+		if( is_mov( $file ) ) {
+			$image = loadFrame( $path );
+		} else {
+			$image = loadImage( $path, $suffix );
+		}
+		if ( $image ){
 			$im2=newSize( $image );
 			if ($im2) {
-				saveImage( $im2, "$dir.small/$file", $suffix );
-			} else {
-				echo "Could not create thumbnail for $path!<br>";
+		        ImageJpeg($im2, $tnname, 80);
+				imagedestroy( $im2 );
+				$retval=$tnname;
 			}
-		}else{
-			echo "Problems loading $path!<br>";
+			imagedestroy($image);
 		}
-	}else{
-		echo "No GD lib installed!<br>";
 	}
+
+	return $retval;
+}
+
+function loadFrame( $path ) {
+	@$mov = new ffmpeg_movie($path);
+	if( $mov ) {
+		$frame = $mov->getFrame(10);
+		if ($frame) {
+			return $frame->toGDImage();	
+		}
+	}
+	return false;
 }
 
 /**
@@ -319,22 +339,6 @@ function loadImage( $path, $suffix ){
 		$image = @ImageCreateFromWbmp( $path );
     }
     return $image;
-}
-
-/**
- * save an image according to it's suffix
- */
-function saveImage( $image, $path, $suffix ){
-    $imtypes=imagetypes();
-    if((($suffix=="jpg") || ($suffix=="jpeg")) && ($imtypes & IMG_JPG)){
-        ImageJpeg($image, $path, 80);
-    }else if($suffix=="gif" && ($imtypes & IMG_GIF)){
-        ImageGif($image, $path );
-    }else if($suffix=="png" && ($imtypes & IMG_PNG)){
-        ImagePng($image, $path );
-    }else if($suffix=="bmp" && ($imtypes & IMG_WBMP)){
-        ImageWbmp($image, $path);
-    }
 }
 
 /**
@@ -460,7 +464,7 @@ function fetchFiles( $dir, $sortmethod  ){
 function browseDir( $dir, $sortmethod ){
 	global $tng_date, $tng_filename;
 	global $tng_extension, $tng_thumbgen, $tng_cols, $tng_zip_up;
-	global $tng_zip_dl, $tng_dirpic, $tng_zippic, $tng_picpic, $tng_movpic, $tng_bsypic;
+	global $tng_zip_dl, $tng_dirpic, $tng_zippic, $tng_picpic, $tng_bsypic;
 	global $edit, $edpass;
 
 	printhead( $dir, $sortmethod );	
@@ -501,12 +505,15 @@ function genThumb( dir, file ) {
 		// check for images and movies
 		foreach( $dircont as $file ){
 			$newtile=false;
-			if(is_pic($file)){
+			if( is_pic($file) || is_mov($file) ){
 				$newtile=true;
 				$haspic=true;
 				// Create thumbnails?
 				$img_src=$tng_picpic;
-				if( !file_exists( $dir.".small/".$file ) ) {
+
+				$tnname = $dir.".small/".pathinfo( $file, PATHINFO_FILENAME ).".jpg";
+
+				if( !file_exists( $tnname ) ) {
 					if( $tng_thumbgen ) {
 						if(!file_exists($dir.".small/")) {
 							if( @mkdir($dir.".small", 0770) === false ) {
@@ -517,20 +524,14 @@ function genThumb( dir, file ) {
 						}
 						$img_src=$tng_bsypic;
 						echo "<script>genThumb( '".urlencode($dir)."', '".urlencode($file)."' );</script>\n";
-//						generateTN($dir, $file);
 					}
 				} else {
-					$img_src=$dir.".small/$file";
+					$img_src=$tnname;
 	           	}
 
 
-				$reference="?tng_cmd=showpic&tng_path=$dir$file";
-
-			// Is the file a movie?
-			} else if( is_mov($file) ) {
-				$newtile=true;
-				$reference=$dir.$file;
-				$img_src=$tng_movpic;
+				if( is_pic( $file ) ) $reference="?tng_cmd=showpic&tng_path=$dir$file";
+				else $reference="$dir$file";
 	        }
 
 			// put the actual tile on the page
@@ -546,13 +547,16 @@ function genThumb( dir, file ) {
 				}
 
 				echo "  <td align='center'>\n";
-				echo "    <a href='$reference'>";
+				echo "    <a href='$reference'><img";
 				if( $img_src == $tng_bsypic ) {
-					echo "<img id='".urlencode($file)."' src='$img_src' border='0' alt='$file' title='$file'></a>\n";
-				} else {
-					echo "<img src='$img_src' border='0' alt='$file' title='$file'></a>\n";
+					echo " id='".urlencode($file)."'";
 				}
-
+				if( is_mov( $file ) ) {
+					echo " style='border:dashed; border-width:1px; border-color:#000;'";
+				} else {
+					echo " style='border:none;'";
+				}
+				echo " src='$img_src' alt='$file' title='$file'></a>\n";
 				// Show filenames? @todo this looks more like comments are printed..
 				// Display extensions?
 
