@@ -285,11 +285,13 @@ function generateTN( $dir, $file ){
 }
 
 function loadFrame( $path ) {
-	@$mov = new ffmpeg_movie($path);
-	if( $mov ) {
-		$frame = $mov->getFrame(10);
-		if ($frame) {
-			return $frame->toGDImage();	
+	if( class_exists ( ffmpeg_movie ) ) {
+		@$mov = new ffmpeg_movie($path);
+		if( $mov ) {
+			$frame = $mov->getFrame(10);
+			if ($frame) {
+				return $frame->toGDImage();	
+			}
 		}
 	}
 	return false;
