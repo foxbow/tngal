@@ -1,25 +1,62 @@
-var sx, sy;
-var tcnt=0;
-var last=-1;
-var piclist=new Array();
-var lastcur="default";
-var current=-1;
-var nptimer=-1;
 /**
- * external variables:
+ * buffer variables to recognize drag events
+ */
+var sx, sy;
+/**
+ * countdown variable starts at 0 and goes up to tout
+ * is set to -1 when a new image is being loaded and 
+ * set to 0 when the image has been resized properly
+ */
+var tcnt=0;
+/**
+ * The last picture that was displayed
+ * used to check state of the slideshow
+ * When -1 no slideshow is running
+ */
+var last=-1;
+/**
+ * the list of pictures in the current directory
+ * this needs to be filled by the page (see below)
+ */
+var piclist=new Array();
+/**
+ * buffer to hold the current cursor before changing so it can be reset properly
+ */
+var lastcur="default";
+/**
+ * the current picture that is being displayed
+ */
+var current=-1;
+/**
+ * id of the current timeout timer for the heartbeat
+ */
+var nptimer=-1;
+
+/**
+ * timeout default
+ */
+var tout=5;
+
+/**
+ * external variables - to be set in the page
  *
-var tout=$tng_time  // timeout in seconds
-piclist[$picnum]=   // list of pictures (paths)
-var current=$curpic	// index of the current picture to start slideshow
-var last=current	// index of the current picture to start slideshow
-var lastpic=		// the highest picture index
+var mypic=document.getElementById('image');
+var bg=document.getElementById('bgd');
+piclist[..]=<path>	// list of pictures (paths)
+current=<int>		// index of the current picture to start slideshow
 **/
 
+/**
+ * lets the background (div) flash with the given colour
+ */
 function blink( col ) {
 	bg.style.backgroundColor=col;
 	setTimeout(function(){bg.style.backgroundColor='#000';}, 25);
 }
 
+/**
+ * switch slideshow mode on and off
+ */
 function toggleSlideshow() {
 	blink('#844');
 	if( last == -1 ) {
@@ -33,6 +70,11 @@ function toggleSlideshow() {
 	}
 }
 
+/**
+ * resize and position the current image
+ * also called on orientation changes of small devices
+ * resets title and cursor to show finished loading the image
+ */
 function setPicDim(){ 
 	// Dimensions of the display area
 	var sheight=window.innerHeight-4; // Avoid right scrollbar
@@ -71,7 +113,7 @@ function setPicDim(){
 	
 	bg.style.cursor=lastcur;
 	if( last != -1 ) {  						// Slideshow active?
-		if ( tcnt == tout ) {					// Next picture? 
+		if ( tcnt == -1 ) {						// Next picture? 
 			tcnt=0;
 		} else if( current != last ) {			// manual change?
 			last = current;
@@ -88,9 +130,13 @@ function setPicDim(){
  * on callbacks, i.e.: document.body when there is no <BODY>
  * tag yet.
  */
-function initPicViewer() {
+function initPicViewer( numpic, timeout ) {
+	tout=timeout;
 	window.addEventListener('orientationchange', setPicDim );
 	
+	/**
+     * set the cursor on active positions
+     */
 	document.onmousemove=function( e ) {
 		var wwidth=window.innerWidth
 		var wheight=window.innerHeight
@@ -102,7 +148,7 @@ function initPicViewer() {
 		} else {
 			if( ( current > 0 ) && ( e.pageX < 100 ) ) {
 				bg.style.cursor="w-resize";
-			} else if( ( current < lastpic ) && ( e.pageX > ( wwidth - 100 ) ) ) {
+			} else if( ( current < piclist.length-1 ) && ( e.pageX > ( wwidth - 100 ) ) ) {
 				bg.style.cursor="e-resize";
 			} else {
 				bg.style.cursor="default";
@@ -197,6 +243,9 @@ function initPicViewer() {
 		break;
 		}
 	}
+
+	loadPic( numpic );
+	heartbeat();
 }
 
 /**
@@ -205,44 +254,57 @@ function initPicViewer() {
 function loadPic( pic ) {
 	if( pic != current ) {
 		if( last != -1 ) {
-			var buff='*';
-			for( i=tout; i>0; i--) buff=buff+'*';
-			document.title=buff;
+			tcnt=-1;
 		} else {
-			document.title="loading";
 			blink('#888');
 		}
+		document.title="loading";
 		lastcur=bg.style.cursor;
 		bg.style.cursor="wait";
 		current=pic;
 		mypic.src=piclist[pic];
+	} else {
+		if( last != -1 ) {
+			tcnt=0;
+		}
 	}
 }
 
+/**
+ * loads the prev/next picture in the row
+ * wraps ends to have an infinite slideshow
+ */
 function nextpic( dir ) {
 	if( dir < 0 ) {
 		if( current > 0 ) loadPic( current-1 );
-		else loadPic( lastpic );
+		else loadPic( piclist.length-1 );
 	} else {
-		if( current < lastpic ) loadPic( current+1 );
+		if( current < piclist.length-1 ) loadPic( current+1 );
 		else loadPic( 0 );
 	}
 }
 
+/**
+ * internal timer to control slideshows
+ */
 function heartbeat() {
 	var buff='*';
+	// Slideshow active?
 	if( last != -1 ) {
-		if( tcnt < tout ) {
-			tcnt=tcnt+1;
-			for( i=tout-tcnt; i>0; i--) buff=buff+'*';
-			document.title=buff;
-		} else {
-			if( current < lastpic ) { 
-				last=current+1;
-				loadPic( last );
+		// loading?
+		if ( tcnt != -1 ) {
+			if( tcnt < tout ) {
+				tcnt=tcnt+1;
+				for( i=tout-tcnt; i>0; i--) buff=buff+'*';
+				document.title=buff;
 			} else {
-				last=0;
-				loadPic( last );
+				if( current < piclist.length-1 ) { 
+					last=current+1;
+					loadPic( last );
+				} else {
+					last=0;
+					loadPic( last );
+				}
 			}
 		}
 	}

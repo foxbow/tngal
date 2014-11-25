@@ -816,7 +816,6 @@ function showpic( $path, $sortmethod, $slide=0 ){
 // are we holding a proper directory?
 	if (is_dir($dir)) {
 		echo "<script>\n";
-		echo "var tout=$tng_time;\n";
 		echo "var mypic=document.getElementById('image');\n";
 		echo "var bg=document.getElementById('bgd');\n";
 
@@ -831,14 +830,10 @@ function showpic( $path, $sortmethod, $slide=0 ){
 			}
 		}
 
-//		echo "var current=$curpic\n";
-		echo "var lastpic=".($picnum-1)."\n";
-		echo "initPicViewer();\n";
 		if ( $slide != 0 ){ 
 			echo "last=$curpic\n";
 		}
-		echo "loadPic($curpic);\n";
-		echo "heartbeat();\n";
+		echo "initPicViewer( $curpic, $tng_time );\n";
 		echo "</script>\n";
 	}else{
     	echo "    <h1>Could not access $dir!</h1>\n";
