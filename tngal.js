@@ -38,13 +38,36 @@ var nptimer=-1;
 var tout=5;
 
 /**
+ * The <img> element holding the actual picture
+ * assigned in initPicViewer()
+ */
+var mypic;
+/**
+ * The <div> element holding the <img> elemont
+ * assigned in initPicViewer()
+ */
+var bg;
+
+/**
  * external variables - to be set in the page
  *
-var mypic=document.getElementById('image');
-var bg=document.getElementById('bgd');
 piclist[..]=<path>	// list of pictures (paths)
 current=<int>		// index of the current picture to start slideshow
 **/
+
+function genThumb( dir, file ) {
+	var xmlhttp;
+	xmlhttp=new XMLHttpRequest();
+
+	xmlhttp.onreadystatechange=function() {
+  		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+			document.getElementById(file).src=xmlhttp.responseText;
+  		}
+	}
+
+	xmlhttp.open('GET', '?tng_cmd=genThumb&file='+file+'&dir='+dir, true);
+	xmlhttp.send();
+}
 
 /**
  * lets the background (div) flash with the given colour
@@ -132,6 +155,9 @@ function setPicDim(){
  */
 function initPicViewer( numpic, timeout ) {
 	tout=timeout;
+	mypic=document.getElementById('image');
+	bg=document.getElementById('bgd');
+
 	window.addEventListener('orientationchange', setPicDim );
 	
 	/**

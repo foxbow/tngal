@@ -470,21 +470,6 @@ function browseDir( $dir, $sortmethod ){
 	global $edit, $edpass;
 
 	printhead( $dir, $sortmethod );	
-echo "<script>
-function genThumb( dir, file ) {
-	var xmlhttp;
-	xmlhttp=new XMLHttpRequest();
-
-	xmlhttp.onreadystatechange=function() {
-  		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-			document.getElementById(file).src=xmlhttp.responseText;
-  		}
-	}
-
-	xmlhttp.open('GET', '?tng_cmd=genThumb&file='+file+'&dir='+dir, true);
-	xmlhttp.send();
-}
-</script>";
    	echo "<table style='margin:0px auto;'>\n";
 	if ($edit){
 		echo "<form action=\"\" method=\"post\">\n";
@@ -816,12 +801,10 @@ function showpic( $path, $sortmethod, $slide=0 ){
 // are we holding a proper directory?
 	if (is_dir($dir)) {
 		echo "<script>\n";
-		echo "var mypic=document.getElementById('image');\n";
-		echo "var bg=document.getElementById('bgd');\n";
-
 		$dircont=fetchFiles( $dir, $sortmethod );
 		$curpic=0;
 		$picnum=0;
+		// Do not just use $dircont as that may also include videos
 		foreach( $dircont as $file ){
 			if( is_Pic( $file ) ) {
 				if( $file == $current ) $curpic=$picnum;
@@ -829,7 +812,6 @@ function showpic( $path, $sortmethod, $slide=0 ){
 				$picnum++;
 			}
 		}
-
 		if ( $slide != 0 ){ 
 			echo "last=$curpic\n";
 		}
@@ -851,6 +833,7 @@ global $edit, $tng_sidebar, $tng_upload, $tng_embed;
 		echo "<html>\n";
 		echo "  <head>\n";
 		echo "    <title>Gallery</title>\n";
+		echo "    <script type='text/javascript' src='tngal.js'></script>\n";
 		echo "  </head>\n";
 		echo "  <body>\n";
 	}
