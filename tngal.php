@@ -171,45 +171,53 @@ case "mkdir":
     break;
 case "move":
     if($edit){
-      $tng_edfile=array();
-      $tng_edfile=$_POST["tng_edfile"];
-      $count=count($tng_edfile);
-      $tng_eddir=$_POST["tng_eddir"];
-      if($tng_eddir=="") echo "<b>No target dir selected!</b><br>\n";
-      else if ($count==0) echo "<b>No source file selected!</b><br>\n";
-      else{
-	    foreach( $tng_edfile as $pic ){
-          $base=pathinfo( $pic, PATHINFO_FILENAME );
-          $file=pathinfo( $pic, PATHINFO_BASENAME );
-          $path=pathinfo( $pic, PATHINFO_DIRNAME );
-          rename( "$pic", "$tng_eddir/$file" );
-          if(file_exists( "$path/.small/$base.jpg" ))
-            rename( "$path/.small/$base.jpg", "$tng_eddir/.small/$base.jpg" );
-		}
-      }
+        $tng_edfile=array();
+        if( isset ( $_POST["tng_edfile"]) ) { 
+            $tng_edfile=$_POST["tng_edfile"];
+//          $count=count($tng_edfile);
+            if( isset( $_POST["tng_eddir"] ) ) {
+                $tng_eddir=$_POST["tng_eddir"];
+                foreach( $tng_edfile as $pic ){
+                    $base=pathinfo( $pic, PATHINFO_FILENAME );
+                    $file=pathinfo( $pic, PATHINFO_BASENAME );
+                    $path=pathinfo( $pic, PATHINFO_DIRNAME );
+                    rename( "$pic", "$tng_eddir/$file" );
+                    if(file_exists( "$path/.small/$base.jpg" ))
+                        rename( "$path/.small/$base.jpg", "$tng_eddir/.small/$base.jpg" );
+		        }
+            } else {
+                echo "<b>No target dir selected!</b><br>\n";
+            }
+        } else {
+            echo "<b>No source file selected!</b><br>\n";
+        }
     }
     browseDir($tng_path, $tng_sort);
     break;
 case "delete":
 	if($edit){
 		$tng_edfile=array();
-		$tng_edfile=$_POST["tng_edfile"];
-		$count=count($tng_edfile);
-		foreach( $tng_edfile as $pic ){
-			$base=pathinfo( $pic, PATHINFO_FILENAME );
-			$file=pathinfo( $pic, PATHINFO_BASENAME );
-			$path=pathinfo( $pic, PATHINFO_DIRNAME );
-			unlink( "$pic" );
-			if(file_exists( "$path/.small/$base.jpg" )) {
-				unlink( "$path/.small/$base.jpg" );
-			}
-		}
+        if( isset( $_POST["tng_edfile"] ) ) { 		
+		    $tng_edfile=$_POST["tng_edfile"];
+	        foreach( $tng_edfile as $pic ){
+		        $base=pathinfo( $pic, PATHINFO_FILENAME );
+		        $file=pathinfo( $pic, PATHINFO_BASENAME );
+		        $path=pathinfo( $pic, PATHINFO_DIRNAME );
+		        unlink( "$pic" );
+		        if(file_exists( "$path/.small/$base.jpg" )) {
+			        unlink( "$path/.small/$base.jpg" );
+		        }
+	        }
+        }
+        if( isset( $_POST["tng_eddir"] ) ){
+            echo "<h2>removal of directories is not yet implemented</h2>\n";
+        }
 	}
 	browseDir($tng_path, $tng_sort);
 	break;
 case "openzip":
     $dirname=openZip($tng_path);
-    $tng_path=upDir($tng_path).$dirname."/";
+    $tng_path=upDir($tng_path); // .$dirname."/";
 default:
     browseDir($tng_path, $tng_sort );
 }
@@ -525,7 +533,7 @@ function browseDir( $dir, $sortmethod ){
 			if( $newtile ) {
 				// New row of images?
 				if($column==0) {
-					// @todo: align on bottom when ethere's text?
+					// @todo: align on bottom when there's text?
 					if ( $tng_filename || $tng_date ) {
 						echo "<tr style='vertical-align:bottom'>\n";
 					} else {
@@ -559,7 +567,7 @@ function browseDir( $dir, $sortmethod ){
 				}
 
 				if( $tng_date != false ) {
-					echo "    <br>".date("$tng_date", filemtime( "$dir$file" ) )."\n";
+					echo "    <br>(".date("$tng_date", filemtime( "$dir$file" ) ).")\n";
 				}
 
 				if($edit){
@@ -630,8 +638,11 @@ function browseDir( $dir, $sortmethod ){
 					$newtile=true;
 					$img_src=$tng_zippic;
 					$target=$dir.$file;
+    				if($edit){
+    					$zipact = "    <input type=\"checkbox\" name=\"tng_edfile[]\" value=\"$dir$file\">\n";
+    				}
 					if($tng_zip_up)
-                     	$zipact = "    <a href='?tng_path=$dir$file&tng_cmd=openzip'>(unZIP)</a>\n";
+                     	$zipact .= "    <a href='?tng_path=$dir$file&tng_cmd=openzip'>(unZIP)</a>\n";
 				}
             }
 
