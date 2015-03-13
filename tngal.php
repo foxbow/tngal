@@ -217,7 +217,8 @@ case "delete":
 	break;
 case "openzip":
     $dirname=openZip($tng_path);
-    $tng_path=upDir($tng_path); // .$dirname."/";
+//    $tng_path=upDir($tng_path); // .$dirname."/";
+    $tng_path=pathinfo( $tng_path, PATHINFO_DIRNAME )."/";
 default:
     browseDir($tng_path, $tng_sort );
 }
@@ -710,18 +711,22 @@ function browseDir( $dir, $sortmethod ){
  */
 function openZip( $path ){
 	global $tng_zip_del;
+	$target=pathinfo( $path, PATHINFO_DIRNAME );
 	$dirname=pathinfo( $path, PATHINFO_FILENAME );
-	if( !file_exists( $dirname ) ){
+	if( !file_exists( $target.$dirname ) ){
 	    $zip = new ZipArchive;
 		$res = $zip->open($path);
 		if ($res === TRUE) {
-			$zip->extractTo( pathinfo( $path, PATHINFO_DIRNAME ) );
+			$res = $zip->extractTo( $target );
+			// @todo: check for success
 			$zip->close();
 			if( $tng_zip_del ) unlink( $path );
 		} else {
 			echo "Could not open $path!<br>\n";
 			echo 'failed, code:' . $res;
 		}
+	}else{
+	    echo "<h3>$target$dirname already exists!</h3>\n";
 	}
 	return $dirname;
 }
