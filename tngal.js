@@ -164,23 +164,20 @@ function initPicViewer( numpic, timeout ) {
      * set the cursor on active positions
      */
 	document.onmousemove=function( e ) {
-		var wwidth=window.innerWidth
-		var wheight=window.innerHeight
+		var wwidth=window.innerWidth/3
+		var wheight=window.innerHeight/3
 
-		if( e.pageY < 100 ) {
+		if( ( current > 0 ) && ( e.pageX < wwidth ) ) {
+			bg.style.cursor="w-resize";
+		} else if( ( current < piclist.length-1 ) && ( e.pageX > ( 2*wwidth ) ) ) {
+			bg.style.cursor="e-resize";
+		} else if( e.pageY < wheight ) {
 			bg.style.cursor="n-resize";
-		} else if( e.pageY > ( wheight - 100 ) ) {
+		} else if( e.pageY > ( 2*wheight ) ) {
 			bg.style.cursor="col-resize";
 		} else {
-			if( ( current > 0 ) && ( e.pageX < 100 ) ) {
-				bg.style.cursor="w-resize";
-			} else if( ( current < piclist.length-1 ) && ( e.pageX > ( wwidth - 100 ) ) ) {
-				bg.style.cursor="e-resize";
-			} else {
-				bg.style.cursor="default";
-			}
+			bg.style.cursor="default";
 		}
-
 	};
 
 	/**
@@ -202,6 +199,8 @@ function initPicViewer( numpic, timeout ) {
 		var dirx = 1
 		var diry = 1
 		var orient, distx, disty
+		var wwidth=window.innerWidth/3
+		var wheight=window.innerHeight/3
 		distx = touch.pageX - sx
 		disty = touch.pageY - sy
 
@@ -214,10 +213,13 @@ function initPicViewer( numpic, timeout ) {
 			disty = -disty
 		}
 
-		if ( distx > 200 ) {
-			if( dirx > 0 ) nextpic(-1);
-			else nextpic( +1 );
-		} else 	if ( disty > 200 ) {
+		if ( distx > wwidth ) {
+			if( dirx > 0 ) {
+				nextpic(-1);
+			} else {
+				nextpic( +1 );
+			}
+		} else 	if ( disty > wheight ) {
 			if( diry < 0 ) {
 				history.back();
 			} else {
@@ -232,16 +234,17 @@ function initPicViewer( numpic, timeout ) {
 	 * mouse control
 	 */
 	document.onclick = function(e) {
-		var wwidth=window.innerWidth
-		var wheight=window.innerHeight
-		if( e.pageY < 100 ) {
-			history.back();
-		} else if( e.pageY > ( wheight - 100 ) ) {
-			toggleSlideshow();
-		} else if( e.pageX < 100 ) {
+		var wwidth=window.innerWidth/3
+		var wheight=window.innerHeight/3
+		
+		if( e.pageX < wwidth ) {
 			nextpic(-1);
-		} else if( e.pageX > ( wwidth - 100 ) ) {
+		} else if( e.pageX > ( 2*wwidth ) ) {
 			nextpic(+1);
+		} else if( e.pageY < wheight ) {
+			history.back();
+		} else if( e.pageY > ( 2*wheight ) ) {
+			toggleSlideshow();
 		} else {
 			window.open(piclist[current]);
 		}
