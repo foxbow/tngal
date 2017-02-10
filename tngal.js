@@ -121,8 +121,8 @@ function setPicDim(){
 			mypic.height=sheight
 		}
 	} else {
-		mypic.width=-1;
-		mypic.height=-1;
+		mypic.width=pwidth;
+		mypic.height=pheight;
 	}
 
 	// Center image vertically

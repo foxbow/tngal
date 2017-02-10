@@ -52,7 +52,7 @@ if(file_exists("tngal_settings.php"))
 
 // if we're named 'tngal.php' we're embedded, else we're a page
 // not sure if that works in any configuration though
-$myname=pathinfo($_SERVER['SCRIPT_NAME'])['basename']."</h2>\n";
+$myname=pathinfo($_SERVER['SCRIPT_NAME'])['basename'];
 if( $myname == "tngal.php" ) {
 	$tng_embed=true;
 } else {
@@ -455,7 +455,7 @@ function sortdir( $dir, $dircont, $sortmethod=0 ) {
  */
 function fetchFiles( $dir, $sortmethod  ){
 	$dircont=array();
-    if ($handle = opendir($dir)) {
+	if ($handle = opendir($dir)) {
 		$i=0;
 		while ( ($file = readdir($handle) ) !== false) {
 			if ( ($file{0} != ".") ) { // && (is_readable( $file ))
@@ -473,13 +473,13 @@ function fetchFiles( $dir, $sortmethod  ){
  * main view
  */
 function browseDir( $dir, $sortmethod ){
-	global $tng_date, $tng_filename;
+	global $tng_date, $tng_filename, $tng_thumbw, $tng_thumbh;
 	global $tng_extension, $tng_thumbgen, $tng_cols, $tng_zip_up;
 	global $tng_zip_dl, $tng_dirpic, $tng_zippic, $tng_picpic, $tng_bsypic;
 	global $edit, $edpass;
 
 	printhead( $dir, $sortmethod );	
-   	echo "<table style='margin:0px auto;'>\n";
+	   	echo "<div style='padding: 10px; width:100%;'>\n";
 	if ($edit){
 		echo "<form action=\"\" method=\"post\">\n";
 	}
@@ -488,21 +488,16 @@ function browseDir( $dir, $sortmethod ){
 		$haspic=false;
 		$text=initText( $dir );
 		if( $dir != "./" ) {
-//			if(file_exists(upDir($dir)."index.html")) $target=upDir($dir)."index.html";
-//			else 
 			$target="?tng_path=".upDir($dir);
-			echo "<tr><th><a href=\"$target\">[up]</a></th><th colspan=\"".($tng_cols-1)."\">".substr($dir,2,strlen($dir)-1)."</th></tr>\n";
+			echo "<div style='width:100%'><a href=\"$target\">[up]</a></th> - ".substr($dir,2,strlen($dir)-1)."</div><hr style='clear: left;' />\n";
 		}
 		
 		// get all files
 		$dircont=fetchFiles($dir, $sortmethod );
-		$column=0;
 
 		// check for images and movies
 		foreach( $dircont as $file ){
-			$newtile=false;
 			if( is_pic($file) || is_mov($file) ){
-				$newtile=true;
 				$haspic=true;
 				// Create thumbnails?
 				$img_src=$tng_picpic;
@@ -521,28 +516,16 @@ function browseDir( $dir, $sortmethod ){
 						$img_src=$tng_bsypic;
 						echo "<script>genThumb( '".urlencode($dir)."', '".urlencode($file)."' );</script>\n";
 					}
-				} else {
+				} 
+				else {
 					$img_src=$tnname;
-	           	}
-
+		           	}
 
 				if( is_pic( $file ) ) $reference="?tng_cmd=showpic&tng_path=$dir$file";
 				else $reference="$dir$file";
-	        }
 
-			// put the actual tile on the page
-			if( $newtile ) {
-				// New row of images?
-				if($column==0) {
-					// @todo: align on bottom when there's text?
-					if ( $tng_filename || $tng_date ) {
-						echo "<tr style='vertical-align:bottom'>\n";
-					} else {
-						echo "<tr style='vertical-align:center'>\n";
-					}
-				}
-
-				echo "  <td align='center'>\n";
+				echo "  <div style='float:left; padding:5px;'>\n";
+				echo "    <div style='width:".($tng_thumbw+10)."px; min-height:".($tng_thumbh+10)."px; '>\n";
 				echo "    <a href='$reference'><img";
 				if( $img_src == $tng_bsypic ) {
 					echo " id='".urlencode($file)."'";
@@ -553,9 +536,9 @@ function browseDir( $dir, $sortmethod ){
 					echo " style='border:none;'";
 				}
 				echo " src='$img_src' alt='$file' title='$file'></a>\n";
+				echo "    </div>\n";
 				// Show filenames? @todo this looks more like comments are printed..
 				// Display extensions?
-
 			
 				if($tng_filename){
 					if( $tng_extension ) {
@@ -564,7 +547,7 @@ function browseDir( $dir, $sortmethod ){
 						$filename=pathinfo ( $file, PATHINFO_FILENAME );
 						if( array_key_exists( $filename, $text ) ) $filename=$text[$filename];
 					}
-					echo "    <br>$filename\n";
+					echo "    $filename\n";
 				}
 
 				if( $tng_date != false ) {
@@ -575,32 +558,18 @@ function browseDir( $dir, $sortmethod ){
 					echo "\n    <input type=\"checkbox\" name=\"tng_edfile[]\" value=\"$dir$file\">\n";
 				}
 
-				echo "  </td>\n";
-
-				// Last column?
-				$column=$column+1;
-				if($column==$tng_cols){
-					$column=0;
-					echo "</tr>\n";
-				}
+				echo "  </div>\n";
 
 			} // is pic or mov
-		}
-
-		// fill up missing tiles
-		if($column > 0){
-			for($i=$tng_cols; $i>$column; $i--) echo "  <td>&nbsp;</td>\n";
-			echo "</tr>\n";
-			$column=0;
-		}
+		} // foreach
 
 		// The current dir contains pics
 		if($haspic){
-			echo "<tr><th colspan='$tng_cols'>";
+			echo "<hr style='clear: left;' />\n<div style='width:100%'>";
 			if($tng_zip_dl) {
 				echo "<a href='?tng_path=$dir&tng_cmd=makezip'>(download zip)</a> \n";
 			}
-			echo "<a href='?tng_path=$dir&tng_cmd=slideshow'>Slideshow</a></th></tr>\n";
+			echo "<a href='?tng_path=$dir&tng_cmd=slideshow'>Slideshow</a></div>\n";
 		}
 
 		// now check for subdirs and archives
@@ -608,8 +577,8 @@ function browseDir( $dir, $sortmethod ){
 			$newtile=false;
 			$zipact="";
 
-            // $file is a directory and not a thumbnail container
-            if( is_dir( $dir.$file ) && ( $file != 'tngal_icons' ) ){
+			// $file is a directory and not a thumbnail container
+			if( is_dir( $dir.$file ) && ( $file != 'tngal_icons' ) ){
 				$newtile=true;
 				$uplevel=$dir.$file."/.small";
 				$img_src=$tng_dirpic;
@@ -633,75 +602,58 @@ function browseDir( $dir, $sortmethod ){
 				if( $tng_zip_dl ) {
 					$zipact .= "    <a href='?tng_path=$dir$file&tng_cmd=makezip'>(download)</a>\n";
 				}
+			
+			}
 			// $file is an archive
-            }else if(is_arc($file)){
+			else if(is_arc($file)){
 				if(!file_exists(substr( "$dir$file", 0, strrpos( "$dir$file", "." )))){
 					$newtile=true;
 					$img_src=$tng_zippic;
 					$target=$dir.$file;
-    				if($edit){
-    					$zipact = "    <input type=\"checkbox\" name=\"tng_edfile[]\" value=\"$dir$file\">\n";
-    				}
+					if($edit){
+						$zipact = "    <input type=\"checkbox\" name=\"tng_edfile[]\" value=\"$dir$file\">\n";
+					}
 					if($tng_zip_up)
-                     	$zipact .= "    <a href='?tng_path=$dir$file&tng_cmd=openzip'>(unZIP)</a>\n";
+						$zipact .= "    <a href='?tng_path=$dir$file&tng_cmd=openzip'>(unZIP)</a>\n";
 				}
-            }
+			}
 
 			if( $newtile ) {
-				if( $column==0 ) {
-					echo "<tr valign='bottom'>\n";
-				}
-
-				echo "  <td align='center'>\n";
+				echo "  <div style='float:left; width:".($tng_thumbw+10)."px; min-height:".($tng_thumbh+10)."px; padding:5px;'>\n";
 				echo "    <a href='$target'><img src='$img_src' border='0' alt='$file'></a>\n";
 				echo "    <br><a href='$target'>$file</a>\n";
 				echo $zipact;				
 				if( $tng_date != false ) {
 					echo "    <br>(".date("$tng_date", filemtime( "$dir$file" ) ).")\n";
 				}
-				echo "  </td>\n";
-
-				$column=$column+1;
+				echo "  </div>\n";
 			}
-
-            if($column==$tng_cols){
-               $column=0;
-               echo "</tr>\n";
-			}
-		}
-
-		if($column > 0){
-			 for($i=$tng_cols; $i>$column; $i--) echo "  <td>&nbsp;</td>\n";
-			 echo "</tr>\n";
-			 $column=0;
 		}
 	}
 
 	if($edit){
-		echo "<tr><td>\n";
+		echo "<hr style='clear: left;' />\n";
 		if( $dir != "./" ) {
 			echo "<input type='radio' name='tng_eddir' value='".updir($dir)."'>&lt;up&gt;\n";
-			echo "</td><td>\n";
 		}
 		echo "<input type=\"submit\" name=\"button\" value=\"move\">\n";
 		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"button\">\n";
 		echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
 		echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
-		echo "</td>\n";
-		echo "<td>\n";
+		echo "<br>\n";
 		echo "<input type=\"submit\" name=\"button\" value=\"delete\">\n";
-		echo "</td></tr>\n";
+		echo "<br>\n";
 		echo "</form>\n";
-		echo "<tr><td colspan=\"$tng_cols\">\n";
+		echo "<br>\n";
 		echo "<form action=\"\" method=\"post\">\n";
 		echo "<input type=\"text\" name=\"tng_eddir\">\n";
 		echo "<input type=\"hidden\" name=\"tng_cmd\" value=\"mkdir\">\n";
 		echo "<input type=\"hidden\" name=\"tng_pass\" value=\"$edpass\">\n";
 		echo "<input type=\"hidden\" name=\"tng_path\" value=\"$dir\">\n";
 		echo "<input type=\"submit\" value=\"Makedir\">\n";
-		echo "</form></td></tr>\n";
+		echo "</form>\n";
 	}
-	echo "</table>\n<!-- End of gallery -->\n";
+	echo "</div>\n<!-- End of gallery -->\n";
 
 	printfoot();
 }
@@ -854,45 +806,48 @@ global $edit, $tng_sidebar, $tng_upload, $tng_embed;
 		echo "  <body>\n";
 	}
 	if( $tng_sidebar ) {
-		echo "  <div style='float:left; width:20%; background-color:#ccc'>\n";
-		echo "<!-- Start of menu -->";
-//		echo "        <p>&nbsp;<a href='?'>Home</a>&nbsp;</p>";
+		echo "  <div style='background-color:#ccc; width:100%; padding:5px;'>\n";
+		echo "<!-- Start of menu -->\n";
+		
 		if( $tng_upload ) {
-			echo "        <p>\n";
-			echo "          <form enctype=\"multipart/form-data\" action=\"\" method=\"post\">\n";
-			echo "            <input type=\"hidden\" name=\"tng_cmd\" value=\"upload\" />\n";
-			echo "            <input name=\"userfile\" type=\"file\" /><br>\n";
-			echo "            <input type=\"submit\" value=\"upload file\" />\n";
-			echo "          </form>\n";
-			echo "        </p>\n";
+			echo "    <div style='float:left; width:30%; padding:5px;'>\n";
+			echo "      <form enctype='multipart/form-data' action='' method='post'>\n";
+			echo "        <input type='hidden' name='tng_cmd' value='upload' />\n";
+			echo "        <input name='userfile' type='file' />\n";
+			echo "        <input type='submit' value='upload' />\n";
+			echo "      </form>\n";
+			echo "    </div>\n";
 		}
-		echo "		  <p>\n";
-		echo "Sort<br>\n";
+		echo "    <div style='float:left; width:30%; padding:5px;'>\n";
 		$methods=array( 'by name asc', 'by name desc', 'newest first', 'oldest first' );
-		echo "<form action='' method='post'>\n";
-		echo "<input type='hidden' name='tng_cmd' value='browse'>\n";
-		echo "<input type='hidden' name='tng_path' value='$dir'>\n";
-		echo "<select name='tng_sort'>\n";
+		echo "      <form action='' method='post'>";
+		echo "        Sort:&nbsp;";
+		echo "        <input type='hidden' name='tng_cmd' value='browse'>";
+		echo "        <input type='hidden' name='tng_path' value='$dir'>";
+		echo "        <select name='tng_sort'>";
 		for( $i=0; $i<4; $i++ ) {
 			echo "<option ";
 			if( $sortmethod == $i ) echo "selected ";
-			echo "value='$i'>".$methods[$i]."</option>\n";
+			echo "value='$i'>".$methods[$i]."</option>";
 		}
-		echo "</select>\n";
-		echo "<input type='submit' value='update'>\n";
-		echo "</form>\n";
-		echo "        </p>\n";
-	
+		echo "          </select>";
+		echo "        <input type='submit' value='update'>";
+		echo "      </form>";
+		echo "    </div>\n";
+		
 		if( !$edit ) {
-			echo "<p><form action='' method='post'>\n";
-			echo "<input type='hidden' name='tng_cmd' value='browse'>\n";
-			echo "<input type='hidden' name='tng_path' value='$dir'>\n";
-			echo "<input type='password' name='tng_pass' size='10'>\n";
-			echo "<input type='submit' value='admin'>\n";
-			echo "</form></p>\n";
+			echo "    <div style='float:right; padding:5px;'>\n";
+			echo "      <form style='float:right;' action='' method='post'>\n";
+			echo "        <input type='hidden' name='tng_cmd' value='browse'>\n";
+			echo "        <input type='hidden' name='tng_path' value='$dir'>\n";
+			echo "        <input type='password' name='tng_pass' size='10'>\n";
+			echo "        <input type='submit' value='admin'>\n";
+			echo "      </form>\n";
+			echo "    </div>\n";
 		}
 
-		echo "</div>\n";
+		echo "    <br style='clear:left;'>\n";
+		echo "  </div>\n";
 		echo "<!-- End of menu -->\n";
 	}
 	echo "<!-- Start of picview -->\n";
