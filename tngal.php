@@ -45,19 +45,11 @@ $tng_bsypic="$tng_picbase/bsy.gif";
 
 $edpass="admin";
 $edit=false;
+$tng_embed=false;
 
 // Override defaults?
 if(file_exists("tngal_settings.php"))
    require_once("tngal_settings.php");
-
-// if we're named 'tngal.php' we're embedded, else we're a page
-// not sure if that works in any configuration though
-$myname=pathinfo($_SERVER['SCRIPT_NAME'])['basename'];
-if( $myname == "tngal.php" ) {
-	$tng_embed=true;
-} else {
-	$tng_embed=false;
-}
 
 // Sorting may be controlled through a cookie
 // If sorting was changed, try to set the cookie before anything else is sent.
