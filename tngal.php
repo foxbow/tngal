@@ -69,13 +69,12 @@ if( isset($_GET["tng_pass"]) && ($_GET["tng_pass"] == $edpass) ) $edit=true;
 if( isset($_POST["tng_path"]) ) $tng_path=$_POST["tng_path"];
 if( isset($_POST["tng_cmd"] ) ) $tng_cmd=$_POST["tng_cmd"];
 if( isset($_POST["tng_pass"]) && ( $_POST["tng_pass"] == $edpass ) ) $edit=true;
-
 // Make sure there is a path
 if(!isset($tng_path) || ($tng_path=="")) $tng_path="./";
 // Do not allow backsteps
 else if( strpos("../", $tng_path) > 0 ) $tng_path="./";
 // Do not allow absolute paths
-else if( $tng_path{0}=="/" ) $tng_path="./";
+else if( $tng_path[0]=="/" ) $tng_path="./";
 
 // browse curent dir is the default command
 if( !isset($tng_cmd) ) $tng_cmd="browse";
@@ -100,13 +99,20 @@ case "upload":
 		exit();
 	}
 	if(isset($_FILES['userfile']['name']) && ($_FILES['userfile']['name'] != "")){
+		if( isset($_POST["tng_url"] ) ) $tng_url=$_POST["tng_url"];
+		else {
+			echo "<h1>URL not set!</h1>\n";
+			echo "<p>Please do not try out commands like that, mm'kay?</p>\n";
+			printfoot();
+			exit();
+		}
 		$upfile=$_FILES['userfile']['name'];
 		$uploaddir = './';
 		$uploadfile = $uploaddir.$upfile;
 
 		if(is_pic($upfile) || is_arc($upfile) || is_mov($upfile)){
 			if (move_uploaded_file($_FILES['userfile']['tmp_name'], $uploadfile)) {
-				$body=$_FILES['userfile']['name'].' was successfully uploaded.';
+				$body="<a href='".$tng_url.$_FILES['userfile']['name']."'>".$_FILES['userfile']['name']."</a> was successfully uploaded.";
 				if( $tng_mailer == "swift" ) {
 			  	    require_once 'swift_required.php';
 					$message = Swift_Message::newInstance('New File in incoming');
@@ -122,17 +128,22 @@ case "upload":
 						echo "Failure:";
 						print_r($failures);
 					}
-				} else if( $tng_mailer == "php" ) {
+				} 
+				else if( $tng_mailer == "php" ) {
 					mail( $tng_to, "New File in incoming", $body,
 						"From: $tng_from\r\n" .
 						"Reply-To: $tng_from\r\n" .
 						"X-Mailer: PHP/" . phpversion());
 				}
-//				echo "<p>$body</p>\n";
-			} else {
+				else {
+					echo "<p>$body</p>\n";
+				}
+			}
+			else {
 				echo "<p>File upload failed - check the length to be below 2MB!</p>\n";
 			}
-		} else {
+		} 
+		else {
 			echo "<p>$upfile is no valid file!</p>";
 			unlink($_FILES['userfile']['tmp_name']);
 		}
@@ -417,27 +428,31 @@ function initText( $path ){
 /*
  * sortmethod:
  *  0 - name asc / default
- *  1 - name desc / missing
+ *  1 - name desc 
  *  2 - age asc
  *  3 - age desc
  */
 function sortdir( $dir, $dircont, $sortmethod=0 ) {
-	if( $sortmethod < 2 ) {
-		sort( $dircont );
-	} else {
-  		$odir = getcwd();
-  		chdir( $dir );
-  		if( $sortmethod == 2 ) {
-	  		usort( $dircont, function($a, $b) {
-    			return filemtime( $a ) < filemtime( $b );
-  			});
-  		} else {
-	  		usort( $dircont, function($a, $b) {
-    			return filemtime( $a ) > filemtime( $b );
-  			});
-  		}
-		chdir( $odir );
+  	$odir = getcwd();
+  	chdir( $dir );
+	switch($sortmethod) {
+	case 1:
+		rsort($dircont);
+		break;
+	case 2:
+	  	usort( $dircont, function($a, $b) {
+			return (filemtime( $b ) - filemtime( $a ));
+		});
+		break;
+	case 3:
+	  	usort( $dircont, function($a, $b) {
+    			return (filemtime( $a ) - filemtime( $b ));
+  		});
+		break;
+	default:
+		sort($dircont);
 	}
+	chdir( $odir );
 	return $dircont;
 }
 
@@ -450,7 +465,7 @@ function fetchFiles( $dir, $sortmethod  ){
 	if ($handle = opendir($dir)) {
 		$i=0;
 		while ( ($file = readdir($handle) ) !== false) {
-			if ( ($file{0} != ".") ) { // && (is_readable( $file ))
+			if ( ($file[0] != ".") ) { // && (is_readable( $file ))
 				$dircont[$i]=$file;
 				$i++;
 			}
@@ -743,6 +758,8 @@ function showpic( $path, $sortmethod, $slide=0 ){
 	echo "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
 	echo "<html>\n";
 	echo "  <head>\n";
+	echo "    <meta http-equiv='Content-Type' content='text/html; charset=UTF-8' >\n";
+	echo "    <meta name='viewport' content='width=device-width, initial-scale=1' >\n";
 	echo "    <title>slidefox</title>\n";
 	echo "    <script type='text/javascript' src='tngal.js'></script>\n";
 	echo "  </head>\n";
@@ -786,12 +803,14 @@ function showpic( $path, $sortmethod, $slide=0 ){
 }
 
 function printhead( $dir="./", $sortmethod=-1 ){
-global $edit, $tng_sidebar, $tng_upload, $tng_embed;
+global $edit, $tng_sidebar, $tng_upload, $tng_embed, $tng_cmd;
 	if( !$tng_embed ) {
 		echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//DE\"\n";
 		echo "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
 		echo "<html>\n";
 		echo "  <head>\n";
+		echo "    <meta http-equiv='Content-Type' content='text/html; charset=UTF-8' >\n";
+		echo "    <meta name='viewport' content='width=device-width, initial-scale=0.8' >\n";
 		echo "    <title>Gallery</title>\n";
 		echo "    <script type='text/javascript' src='tngal.js'></script>\n";
 		echo "  </head>\n";
@@ -802,15 +821,17 @@ global $edit, $tng_sidebar, $tng_upload, $tng_embed;
 		echo "<!-- Start of menu -->\n";
 		
 		if( $tng_upload ) {
-			echo "    <div style='float:left; width:30%; padding:5px;'>\n";
+			echo "    <div style='float:left; padding:5px;'>\n";
 			echo "      <form enctype='multipart/form-data' action='' method='post'>\n";
 			echo "        <input type='hidden' name='tng_cmd' value='upload' />\n";
+			echo "        <input id='myurl' type='hidden' name='tng_url' value='' />\n";
 			echo "        <input name='userfile' type='file' />\n";
 			echo "        <input type='submit' value='upload' />\n";
 			echo "      </form>\n";
 			echo "    </div>\n";
+			echo "<script>document.getElementById('myurl').value=window.location.href;</script>\n";
 		}
-		echo "    <div style='float:left; width:30%; padding:5px;'>\n";
+		echo "    <div style='float:left; padding:5px;'>\n";
 		$methods=array( 'by name asc', 'by name desc', 'newest first', 'oldest first' );
 		echo "      <form action='' method='post'>";
 		echo "        Sort:&nbsp;";
